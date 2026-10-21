@@ -140,7 +140,7 @@ return {
   },
   {
     'nvim-telescope/telescope.nvim',
-    dependencies = { 'nvim-lua/plenary.nvim' },
+    dependencies = { 'nvim-lua/plenary.nvim', 'nvim-telescope/telescope-ui-select.nvim' },
     opts = {
       defaults = {
         prompt_prefix = '  > ', selection_caret = '  ',
@@ -154,6 +154,14 @@ return {
         live_grep = { additional_args = function() return { '--hidden', '-g', '!.git' } end },
       },
     },
+    config = function(_, opts)
+      opts.extensions = opts.extensions or {}
+      opts.extensions['ui-select'] = {
+        require('telescope.themes').get_dropdown({ previewer = false }),
+      }
+      require('telescope').setup(opts)
+      require('telescope').load_extension('ui-select')
+    end,
   },
   {
     'nvim-treesitter/nvim-treesitter', branch = 'master',

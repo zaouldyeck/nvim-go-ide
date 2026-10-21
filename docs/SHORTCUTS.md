@@ -16,6 +16,9 @@ Press `Esc` before a Normal-mode shortcut. **`Space` is the leader key**: press 
 | Go to definition | `F12` or `gd` | Normal |
 | Rename symbol | `F2` or `Space r n` | Normal |
 | Code actions | `Space c a` | Normal / Visual |
+| Expand snippet / next placeholder | `Ctrl+L` | Insert / snippet Select |
+| Previous snippet placeholder | `Ctrl+H` | Insert / snippet Select |
+| Next / previous snippet choice | `Alt+N` / `Alt+P` | Insert / snippet Select, with an active choice |
 | Nearest test | `Space t t` | Normal, in a Go test file |
 | Run package | `Space r r` | Normal, Go file active |
 | Debug / continue | `F5` or `Space d c` | Normal |
@@ -35,6 +38,17 @@ Press `Esc` before a Normal-mode shortcut. **`Space` is the leader key**: press 
 | Command palette | `Space f c` |
 | Symbols in current document | `Space f s` |
 | Workspace symbols | `Space f S` |
+| Fuzzy search current buffer | `Space /` |
+| Search current word | `Space s w` |
+| Resume last picker | `Space s r` |
+| Search help / key mappings | `Space s h` / `Space s k` |
+| Search text in open buffers | `Space s /` |
+| Find active Neovim profile files | `Space s n` |
+| Choose an open buffer (original alias) | `Space Space` |
+| Find file / project text (original aliases) | `Space s f` / `Space s g` |
+| Recently opened files (original alias) | `Space s .` |
+| Search diagnostics | `Space s d` |
+| Choose a Telescope picker | `Space s s` |
 | Toggle Explorer | `Space e` |
 | Reveal current file in Explorer | `Space E` |
 | Toggle symbol outline | `Space o` |
@@ -68,7 +82,7 @@ These keys apply while the **Neo-tree Explorer** is focused:
 
 Explorer starts 40 columns wide with a blue open-folder icon and bold italic home-relative root path. Dotfiles and ignored entries start hidden; the native `(N hidden items)` row reports the count. `H` toggles filtered entries without changing your files.
 
-In a file/search picker, type to filter, use `Ctrl+J` / `Ctrl+K` or the arrow keys to select an item, `Enter` to open it, and `Esc` to close the picker.
+In a file/search picker, type to filter, use `Ctrl+J` / `Ctrl+K` or the arrow keys to select an item, `Enter` to open it, and `Esc` to close the picker. Telescope's default `Ctrl+V` / `Ctrl+X` open a selected file in a vertical/horizontal split, `Ctrl+T` opens it in a tab, and `Ctrl+U` / `Ctrl+D` scroll the preview.
 
 The file strip appears automatically when several files are open. Set `always_show_tabs = true` in the profile settings to keep it visible with one file. Relative numbers are enabled by default: the highlighted number is the current file line, and surrounding numbers are distances for motions such as `5j` or `5k`.
 
@@ -89,6 +103,7 @@ The file strip appears automatically when several files are open. Set `always_sh
 | Rename symbol | `Space r n` or `F2` |
 | Code actions for cursor/selection | `Space c a` |
 | Format and organize imports | `Space c f`, `:GoFormat`, or `:GoImports` |
+| Tidy active module dependencies | `Space c m` or `:GoModTidy` |
 | Toggle format on save | `:GoFormatToggle` |
 | Toggle inlay hints | `Space c i` or `:GoInlayHints` |
 | Run a code lens | `Space c l` |
@@ -99,13 +114,15 @@ The file strip appears automatically when several files are open. Set `always_sh
 | Move current line or selected lines | `Alt+J` / `Alt+K` in Normal / Visual mode |
 | Save all modified files | `:wall` |
 
-Code actions depend on the cursor location, selection, and available type information. Struct tags, interface implementation, and extraction are available when `gopls` offers them at that location.
+Code actions open a Telescope dropdown and depend on the cursor location, selection, and available type information. Struct tags, interface implementation, and extraction are available when `gopls` offers them at that location. Type to filter, use `Ctrl+J` / `Ctrl+K` or the arrow keys to select, and press `Enter` to apply or `Esc` to cancel.
+
+`:GoModTidy` runs asynchronously in the module containing the active Go file, `go.mod`, or `go.sum`. It first saves that module's modified named Go buffers and open `go.mod`/`go.sum` buffers, excluding nested modules. It reloads metadata buffers with no unsaved changes after the job and preserves unsaved edits made while it runs. Inspect output with `:GoOutput`, cancel with `:GoStop`, and review the `go.mod` / `go.sum` diff. It is an explicit action; it does not run on save.
 
 The hover card uses native Markdown rendering and Go syntax highlighting with a rounded blue border and a **Documentation** title. Moving the source cursor dismisses an unfocused card. Insert-mode `Ctrl+K` opens matching **Signature** help; the close keys above apply while a documentation window is focused.
 
 ## Completion and snippets
 
-These keys apply while typing in Insert mode.
+Completion keys apply in Insert mode; dedicated snippet keys also work in snippet Select mode.
 
 | Action | Keys |
 | --- | --- |
@@ -114,9 +131,32 @@ These keys apply while typing in Insert mode.
 | Accept selected item | `Enter` |
 | Dismiss completion | `Ctrl+E` |
 | Scroll completion documentation | `Ctrl+F` / `Ctrl+B` |
-| Next / previous snippet placeholder | `Tab` / `Shift+Tab` when completion is closed |
+| Expand snippet trigger / next placeholder | `Ctrl+L` |
+| Previous snippet placeholder | `Ctrl+H` |
+| Next / previous active snippet choice | `Alt+N` / `Alt+P` |
+| Expand or move through snippet placeholders | `Tab` / `Shift+Tab` when completion is closed |
+| Reload custom snippets after editing | `:GoSnippetsReload` in Normal mode |
 
-No item is silently preselected: `Enter` confirms only an item you selected. Go snippets include `iferr`, `func`, `meth`, `test`, `main`, `forr`, `struct`, `iface`, `switch`, and `errf`. Type the trigger and select its Snippet entry, or use `Tab` to expand when the completion menu is closed.
+No item is silently preselected: `Enter` confirms only an item you selected. Tab/Shift+Tab select completion entries first while the menu is visible; use Ctrl+L/Ctrl+H for dedicated snippet navigation. Type a trigger and press Ctrl+L, select its **Snippet** completion entry, or use Tab when completion is closed.
+
+| Trigger | Expansion |
+| --- | --- |
+| `tys`, `struct` | Struct name, first field name/type, then remaining body |
+| `meth` | Editable receiver name/type, method name/parameters, return choice, body |
+| `func` | Function name/parameters, return choice, body |
+| `fmain`, `main` | Bare `func main()` with cursor in the body |
+| `iferr` | Error check |
+| `test` | Go test function |
+| `forr` | Range loop |
+| `iface` | Interface declaration |
+| `switch` | Switch statement |
+| `errf` | Wrapped `fmt.Errorf` expression |
+
+In `func` and `meth`, Alt+N cycles `(T1, error)` → `error` → no return type; Alt+P cycles backward. Make the selection while the return choice is active. Edit the placeholder types and finish a valid body before formatting.
+
+Snippet jumps act on **active placeholders**, including those inserted by gopls completion. They do not jump between arbitrary existing call arguments. The function template's parameters are a single field, so commas typed within it do not create new placeholders. Outside an available expansion/jump or active choice, the keys fall back normally. In Normal mode Ctrl+H/Ctrl+L still change windows. Some terminals send Backspace as Ctrl+H or intercept Alt combinations; adjust terminal/tmux passthrough, or use Tab/Shift+Tab with completion closed for jumps.
+
+Edit `config/lua/custom/snippets.lua` in the repository or `~/.config/nvim-go/lua/custom/snippets.lua` in the default installed profile. Save the installed module and run `:GoSnippetsReload`, then expand a fresh snippet. Reinstalling copies the repository configuration, so preserve lasting customizations there too.
 
 ## Problems, tests, coverage, and running
 
@@ -132,7 +172,7 @@ No item is silently preselected: `Enter` confirms only an item you selected. Go 
 | Show/hide Go output | `Space t o` | `:GoOutput` |
 | Run module coverage | `Space t c` | `:GoCoverage` |
 | Clear coverage marks | `Space t C` | `:GoCoverageClear` |
-| Stop Go run/test task | `Space t s` | `:GoStop` |
+| Stop Go run/test/tidy task | `Space t s` | `:GoStop` |
 | Run current package | `Space r r` | `:GoRun` |
 | Run package with prompted arguments | `Space r a` | `:GoRun arg1 arg2` |
 | Open failure locations | — | `:copen` |

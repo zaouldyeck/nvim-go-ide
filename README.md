@@ -7,10 +7,12 @@ with `nvim-go`.
 
 ## Install on Fedora Asahi Remix
 
-From the directory containing this file:
+Clone the repository, then install from its root directory:
 
 ```bash
 sudo dnf install git curl tar unzip gcc ripgrep wl-clipboard fontconfig
+git clone https://github.com/zaouldyeck/nvim-go-ide.git
+cd nvim-go-ide
 bash install.sh --font
 bash scripts/check.sh ~/.local/bin/nvim-go
 cd sample-project
@@ -35,8 +37,8 @@ cd ~/code/golang/cli
 | Area | Features |
 | --- | --- |
 | Appearance | Screenshot-sampled navy palette, italic purple keywords, cyan Go gophers, relative line numbers, tab guides, Horizon status line with rose-red Normal and cyan Insert accents at both ends, automatic open-file tabs, optional breadcrumbs and minimap |
-| Navigation | Neo-tree Explorer with a blue folder icon, bold italic directory header and hidden-file summary; fuzzy file search, project text search, outline, document/workspace symbols, split windows, definition/reference/implementation jumps |
-| Go editing | gopls, completion, snippets, rounded bordered signature help and rich hover docs, rename, code actions, import management, format on save, optional inlay hints and code lenses |
+| Navigation | Neo-tree Explorer with a blue folder icon, bold italic directory header and hidden-file summary; fuzzy file/buffer search, project and open-buffer text search, search history, outline, document/workspace symbols, split windows, definition/reference/implementation jumps |
+| Go editing | gopls, completion, custom LuaSnip templates with return-type choices and Ctrl+L/Ctrl+H navigation, rounded bordered signature help and rich hover docs, rename, dropdown code actions, import management, format on save, explicit module tidy, optional inlay hints and code lenses |
 | Execution | Run the current package in a terminal with stdin support; run nearest/file/package/module tests; navigable failure locations; coverage markers |
 | Debugging | Delve, breakpoints and conditional breakpoints, step/continue, locals, watches, call stacks, expression evaluation, nearest-test debugging, compatible Go launch.json entries |
 | Daily workflow | Git gutter changes, hunk preview/staging/reset, blame, integrated shell, persistent undo, mouse support, discoverable Space-prefixed keys |
@@ -72,6 +74,28 @@ or **Ctrl+D / Ctrl+U**, and close it with **q** or **Esc**. Moving the cursor in
 the source dismisses an unfocused card. **Ctrl+K** in Insert mode shows signature
 help with the same border.
 
+### Your familiar editing workflow
+
+In a Go file, type `func` and press **Ctrl+L** to expand your function template.
+Use **Ctrl+L / Ctrl+H** to move forward/back through its fields and
+**Alt+N / Alt+P** while a return choice is active to select multiple returns,
+a single return, or no return. These keys work in Insert and snippet Select
+mode. **Tab** keeps its existing completion-first behavior. Snippet jumps also
+work through argument placeholders created by gopls completion; they do not
+move between arbitrary arguments in code that was already written.
+
+Your `tys`/`struct`, `meth`, `func`, and `fmain`/`main` templates live in
+`config/lua/custom/snippets.lua`, alongside the existing Go snippets. After
+editing the installed module, run `:GoSnippetsReload`. The guide includes a
+worked function example and explains how to keep personal edits on updates.
+
+Your `Space s ...` search shortcuts are restored, including **Space s w** for
+the current word, **Space s r** to resume a picker, and **Space /** to search
+the current buffer. Existing `Space f ...` shortcuts remain available.
+Use **Space c m** or `:GoModTidy` to run `go mod tidy` explicitly in the active
+module. It runs asynchronously in the Go output panel; `:GoStop` cancels it.
+Saving a Go file formats/imports the file and does not trigger module tidy.
+
 ## Installation and version choices
 
 The default profile uses `~/.config/nvim-go` and `~/.local/share/nvim-go`, with a
@@ -89,15 +113,26 @@ API and Aerial's `nvim-0.11` compatibility branch. Change the editor and related
 plugin APIs together if you later migrate to a newer Neovim series. The
 configuration avoids the deprecated `require('lspconfig').gopls.setup()` path.
 Neo-tree's `v3.x` branch and its Nui dependency are pinned alongside the other
-plugins; the installer restores all 27 recorded plugin revisions.
+plugins; the installer restores the revisions in the lockfile, including the
+Telescope dropdown selection extension.
 
-To install this revision over the earlier package, extract the new archive into
-a fresh directory. From its `go-ide` directory, rerun `bash install.sh --font`
-and `bash scripts/check.sh ~/.local/bin/nvim-go`. Reinstalling creates timestamped
-configuration and launcher backups; keep any personal edits you want to carry
-over. Keep the archive to restore this exact release. The guide explains the
-distinction between restoring settings and rolling back executable tools and
-plugin data.
+To update an existing clone, save and close `nvim-go`, then run these commands
+from the repository root. Commit or otherwise preserve any changes in the
+clone before pulling:
+
+```bash
+git pull --ff-only
+bash install.sh
+bash scripts/check.sh ~/.local/bin/nvim-go
+```
+
+Pulling updates the checkout; running the installer applies it to your active
+profile. Reinstalling creates timestamped configuration and launcher backups.
+It replaces the installed configuration, so preserve and reapply personal
+settings and custom snippets from the printed backup path. If you are using
+the original ZIP, clone the repository first and run its installer; use
+`--font` when you also need the font. The guide covers complete rollback and
+the distinction between settings, executable tools, and plugin data.
 
 ## Configuration map
 
@@ -111,12 +146,29 @@ plugin data.
 | `config/lua/go_ide/hover.lua` | Native documentation/signature cards, sizing, borders and local close keys |
 | `config/lua/plugins/ui.lua` | Explorer, tabs, status line, search, outline, minimap, Git |
 | `config/lua/plugins/go.lua` | Completion, snippets and debugger dependencies |
+| `config/lua/custom/snippets.lua` | Personal Go templates and return-type choices; reload with `:GoSnippetsReload` |
 | `config/lua/go_ide/lsp.lua` | gopls, formatting, imports and analysis |
-| `config/lua/go_ide/go.lua` | Run, tests, quickfix and coverage |
+| `config/lua/go_ide/go.lua` | Run, tests, module tidy, quickfix and coverage |
 | `config/lua/go_ide/debug.lua` | Delve launch configurations and debugger panels |
 | `config/lua/go_ide/terminal.lua` | Persistent project shell |
 | `scripts/versions.env` | Tool versions and official release checksums |
 | `scripts/check.sh` | Installation checks; no plugin installation in check mode |
+| `scripts/build-guide-pdf.py` | Rebuild the printable guide from the tracked Markdown and screenshots |
+
+### Rebuild the printable guide
+
+The PDF contains the getting-started guide and the complete shortcut reference.
+To rebuild it from the repository root:
+
+```bash
+python3 -m pip install reportlab matplotlib
+python3 scripts/build-guide-pdf.py
+```
+
+These Python packages are only needed to build the documentation. They are
+not needed to install or use the editor. The script writes
+`nvim-go-getting-started.pdf`; `--output /path/to/guide.pdf` selects another
+destination.
 
 ## Scope
 

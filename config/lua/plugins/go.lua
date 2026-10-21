@@ -11,21 +11,8 @@ return {
     },
     config = function()
       local cmp, luasnip = require("cmp"), require("luasnip")
-      local s, t, i = luasnip.snippet, luasnip.text_node, luasnip.insert_node
-      local fmt = require("luasnip.extras.fmt").fmt
       luasnip.config.setup({ history = true, updateevents = "TextChanged,TextChangedI" })
-      luasnip.add_snippets("go", {
-        s("iferr", fmt("if err != nil {{\n\t{}\n}}", { i(1, "return err") })),
-        s("func", fmt("func {}({}) {} {{\n\t{}\n}}", { i(1, "name"), i(2), i(3), i(0) })),
-        s("meth", fmt("func ({} *{}) {}({}) {} {{\n\t{}\n}}", { i(1, "s"), i(2, "Server"), i(3, "Method"), i(4), i(5), i(0) })),
-        s("test", fmt("func Test{}(t *testing.T) {{\n\t{}\n}}", { i(1, "Name"), i(0) })),
-        s("main", fmt("func main() {{\n\t{}\n}}", { i(0) })),
-        s("forr", fmt("for {}, {} := range {} {{\n\t{}\n}}", { i(1, "i"), i(2, "v"), i(3, "items"), i(0) })),
-        s("struct", fmt("type {} struct {{\n\t{}\n}}", { i(1, "Name"), i(0) })),
-        s("iface", fmt("type {} interface {{\n\t{}\n}}", { i(1, "Name"), i(0) })),
-        s("switch", fmt("switch {} {{\ncase {}:\n\t{}\ndefault:\n\t{}\n}}", { i(1), i(2), i(3), i(0) })),
-        s("errf", { t('fmt.Errorf("'), i(1, "operation"), t(': %w", '), i(2, "err"), t(")"), i(0) }),
-      })
+      require("custom.snippets").setup()
       cmp.setup({
         snippet = { expand = function(args) luasnip.lsp_expand(args.body) end },
         completion = { completeopt = "menu,menuone,noinsert" },
@@ -40,6 +27,32 @@ return {
           ["<C-b>"] = cmp.mapping.scroll_docs(-4),
           ["<C-f>"] = cmp.mapping.scroll_docs(4),
           ["<CR>"] = cmp.mapping.confirm({ select = false }),
+          -- Dedicated snippet keys also work while completion is visible.
+          -- close() preserves typed text; abort() would restore the old line.
+          ["<C-l>"] = cmp.mapping(function(fallback)
+            if luasnip.expand_or_locally_jumpable() then
+              cmp.close()
+              luasnip.expand_or_jump()
+            else fallback() end
+          end, { "i", "s" }),
+          ["<C-h>"] = cmp.mapping(function(fallback)
+            if luasnip.locally_jumpable(-1) then
+              cmp.close()
+              luasnip.jump(-1)
+            else fallback() end
+          end, { "i", "s" }),
+          ["<M-n>"] = cmp.mapping(function(fallback)
+            if luasnip.in_snippet() and luasnip.choice_active() then
+              cmp.close()
+              luasnip.change_choice(1)
+            else fallback() end
+          end, { "i", "s" }),
+          ["<M-p>"] = cmp.mapping(function(fallback)
+            if luasnip.in_snippet() and luasnip.choice_active() then
+              cmp.close()
+              luasnip.change_choice(-1)
+            else fallback() end
+          end, { "i", "s" }),
           ["<Tab>"] = cmp.mapping(function(fallback)
             if cmp.visible() then cmp.select_next_item()
             elseif luasnip.expand_or_locally_jumpable() then luasnip.expand_or_jump()

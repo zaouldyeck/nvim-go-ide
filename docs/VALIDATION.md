@@ -162,6 +162,80 @@ Included previews: `nvim-go-editor.png` (Normal), `nvim-go-insert.png` (Insert),
 `nvim-go-hover.png` (documentation), `nvim-go-workbench.png` (optional panels)
 and `nvim-go-terminal.png` (integrated shell).
 
+## Personal workflow migration: snippets, search and module tidy
+
+Validated on **21 October 2026**, starting from repository commit
+`a7b42f764bf91b896f1a0bc7f04e30ca9e552ac1`. Execution used the pinned Neovim
+**0.11.7** and Go **1.27.3** on the same Linux x86_64 host. The plugin lockfile
+adds Telescope UI Select at
+`6e51d7da30bd139a6950adf2a47fda6df9fa06d2`; the other plugin revisions and
+native tool versions are unchanged.
+
+| Check | Result |
+| --- | --- |
+| Full profile startup and `go_ide.doctor` | Passed, including all checked tools, plugins, Go parser and commands |
+| All 12 custom snippet triggers, keyed reload and preservation of unrelated snippets | Passed |
+| Function expansion, nested forward/backward stops and both return-choice keys | Passed |
+| Multiple, single and no return types; correct optional spacing | Passed |
+| Value/pointer method receivers, struct aliases and main aliases | Passed |
+| Ctrl+L/Ctrl+H through LSP-style argument placeholders | Passed |
+| Visible completion menu during a snippet jump | Passed; text retained and next field selected |
+| Insert/Select fallbacks and local jump guards with snippet history enabled | Passed |
+| Normal Ctrl+H/Ctrl+L between Neo-tree and source | Passed |
+| Restored search mappings and current-buffer fuzzy picker | Passed in the attached UI |
+| `vim.ui.select` dropdown | Correct choice, callback called exactly once; border and palette visually inspected |
+| Real gopls completion for `Printf` | Argument placeholders supplied and Ctrl+L advanced to the second argument |
+| Completion candidate inserted while editing a snippet | Ctrl+L closed the menu, kept `string` and selected `error` |
+| `GoModTidy` focused suite | 39 checks passed |
+| Updated PDF guide and shortcut reference | All 21 pages rendered and visually inspected |
+| PDF rebuild from a different working directory | Passed; identical inputs produced identical bytes |
+| Final patch whitespace check | Passed |
+
+The portable snippet suite contains eight interaction groups. It uses the real
+pinned LuaSnip, nvim-cmp and cmp_luasnip plugins in an isolated Neovim child,
+without downloading dependencies. A separate attached-UI check covered an
+actual selected completion candidate: after inserting `string` in the first
+return field, Ctrl+L preserved `func Name(x int) (string, error) {` and moved to
+the `error` field. Real gopls completion was also checked independently of the
+synthetic LSP-style snippet fixture.
+
+The module-tidy suite uses real Go with offline, temporary modules. It checks
+the active module even when the editor's working directory is elsewhere,
+paths containing spaces, saving modified source and metadata, excluding nested
+modules, invocation from Go/go.mod/go.sum, clean metadata reload, unsaved edits
+made during the job, invalid metadata, busy-task rejection, cancellation and
+rejection outside a module. The suite completed with:
+
+```text
+GoModTidy: 39 checks passed (offline real Go, module scope, saves/reload, failures and cancellation)
+```
+
+After installing this revision, run the portable suites from the repository
+root with the installed launcher:
+
+```bash
+~/.local/bin/nvim-go --headless -u NONE -i NONE -l scripts/test-snippets.lua
+~/.local/bin/nvim-go --headless -u NONE -l scripts/test-go-tidy.lua
+```
+
+The first script also accepts an explicit plugin directory as its final
+argument; the second accepts an explicit Go executable. They create isolated
+temporary fixtures and do not edit project files.
+
+This migration's integration check reused the pinned native tools and parsers.
+All 25 reused plugin checkouts matched their lockfile commits. The environment's
+Git proxy was unavailable, so the missing Neo-tree, Nui and UI Select runtime
+files were retrieved through the GitHub connector; all 116 retrieved files
+matched their Git blob hashes. The assembled profile passed its doctor and UI
+checks. A fresh networked installer run and the earlier full Delve sessions
+were not repeated for this migration.
+
+LuaSnip's existing optional `repeat#set` call is suppressed upstream but can
+leave `E117` in `vim.v.errmsg` after snippet expansion when vim-repeat is not
+installed. It produced no visible error or message in these interaction
+checks. Fresh-start error state and doctor checks passed; this migration does
+not add vim-repeat or alter that upstream behavior.
+
 ## ARM64 static check
 
 The official pinned `nvim-linux-arm64.tar.gz` was downloaded separately and its
@@ -185,6 +259,6 @@ graphics/display settings and OS-level debugging permissions. Use
   appearance; this profile configures the editor.
 - The Go tools intentionally run the current package or module. Multi-module
   workspace-wide test orchestration is left to ordinary Go commands.
-- Temporary QA scripts used for integration tests contain local
-  fixture paths and are omitted from the package. The portable installation
-  checker and executable sample tests are included.
+- Temporary UI integration scripts contain local fixture paths and are omitted
+  from the package. The portable installation checker, snippet/module-tidy
+  interaction suites and executable sample tests are included.

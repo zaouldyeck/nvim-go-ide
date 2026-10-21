@@ -263,8 +263,11 @@ local function run_task(args, context, cwd, after)
       local seconds = (vim.uv.hrtime() - started) / 1e9
       local cancelled = M.state.cancelled
       M.state.cancelled = false
-      local status = cancelled and "STOPPED" or (code == 0 and "PASS" or "FAIL")
-      local summary = string.format("%s  %d passed · %d failed · %d skipped  (%.2fs)", status, counts.pass, counts.fail, counts.skip, seconds)
+      local is_test = args[2] == "test"
+      local status = cancelled and "STOPPED" or (code == 0 and (is_test and "PASS" or "DONE") or "FAIL")
+      local summary = is_test
+        and string.format("%s  %d passed · %d failed · %d skipped  (%.2fs)", status, counts.pass, counts.fail, counts.skip, seconds)
+        or string.format("%s  %s  (%.2fs)", status, table.concat(args, " ", 2), seconds)
       append({ "", summary })
       M.state.last_result = { code = code, counts = counts, summary = summary, quickfix = items, cancelled = cancelled }
       vim.fn.setqflist({}, "r", { title = title, items = items })
@@ -297,6 +300,55 @@ function M.test(scope)
   end
   args[#args + 1] = scope == "all" and "./..." or "."
   return run_task(args, context, scope == "all" and context.root or context.directory)
+end
+
+local function module_metadata_buffers(root)
+  local buffers = {}
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_loaded(buf) then
+      local name = vim.api.nvim_buf_get_name(buf)
+      if name == root .. "/go.mod" or name == root .. "/go.sum" then buffers[#buffers + 1] = buf end
+    end
+  end
+  return buffers
+end
+
+function M.mod_tidy()
+  if M.state.running then notify("A Go task is already running. Use :GoStop first.", vim.log.levels.WARN); return false end
+  local buf = vim.api.nvim_get_current_buf()
+  local file = vim.api.nvim_buf_get_name(buf)
+  local basename = vim.fs.basename(file)
+  local context
+  if basename == "go.mod" or basename == "go.sum" then
+    local directory = vim.fs.dirname(file)
+    context = { buf = buf, file = file, directory = directory, root = vim.fs.root(directory, "go.mod") }
+  else
+    context = M.context()
+  end
+  if not context then return false end
+  if not context.root or vim.fn.filereadable(context.root .. "/go.mod") ~= 1 then
+    notify("No go.mod found. Open a saved Go file, go.mod or go.sum inside a Go module.", vim.log.levels.WARN)
+    return false
+  end
+  if not M.save_go_buffers(context) then return false end
+  -- Tidy must see saved source and metadata, including edits in hidden buffers.
+  for _, metadata in ipairs(module_metadata_buffers(context.root)) do
+    if vim.bo[metadata].modified then
+      local ok, err = pcall(vim.api.nvim_buf_call, metadata, function() vim.cmd("silent update") end)
+      if not ok then notify("Could not save module metadata: " .. tostring(err), vim.log.levels.ERROR); return false end
+    end
+  end
+  return run_task({ tool("go"), "mod", "tidy" }, context, context.root, function()
+    for _, metadata in ipairs(module_metadata_buffers(context.root)) do
+      if vim.bo[metadata].modified then
+        notify("Kept unsaved edits in " .. vim.fs.basename(vim.api.nvim_buf_get_name(metadata))
+          .. "; review the module changes before reloading it.", vim.log.levels.WARN)
+      else
+        -- Reload metadata changed by Go, without discarding edits made during the job.
+        vim.cmd("silent checktime " .. metadata)
+      end
+    end
+  end)
 end
 
 function M.run(args)
@@ -446,10 +498,11 @@ function M.setup()
     { nargs = "*", desc = "Run current Go package in an interactive terminal (arguments supported)" })
   vim.api.nvim_create_user_command("GoTest", function(opts) M.test(opts.args == "" and "package" or opts.args) end,
     { nargs = "?", complete = function() return { "nearest", "file", "package", "all" } end, desc = "Run Go tests" })
+  vim.api.nvim_create_user_command("GoModTidy", M.mod_tidy, { desc = "Save module buffers and tidy dependencies asynchronously" })
   vim.api.nvim_create_user_command("GoCoverage", M.coverage, { desc = "Test the module with coverage signs" })
   vim.api.nvim_create_user_command("GoCoverageClear", M.clear_coverage, { desc = "Clear Go coverage signs" })
   vim.api.nvim_create_user_command("GoOutput", M.toggle_output, { desc = "Toggle Go task output" })
-  vim.api.nvim_create_user_command("GoStop", M.stop, { desc = "Stop Go test/run jobs" })
+  vim.api.nvim_create_user_command("GoStop", M.stop, { desc = "Stop Go task/run jobs" })
 end
 
 return M

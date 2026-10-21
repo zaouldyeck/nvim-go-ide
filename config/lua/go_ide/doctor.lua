@@ -20,7 +20,7 @@ function M.run()
   end
   local parser_ok, parser_error = pcall(vim.treesitter.language.add, 'go')
   check('Go parser', parser_ok, not parser_ok and tostring(parser_error) or nil)
-  for _, name in ipairs({ 'GoRun', 'GoTest', 'GoFormat', 'GoCoverage', 'GoDebugTest', 'GoTerminal', 'GoIdeHealth' }) do
+  for _, name in ipairs({ 'GoRun', 'GoTest', 'GoFormat', 'GoModTidy', 'GoSnippetsReload', 'GoCoverage', 'GoDebugTest', 'GoTerminal', 'GoIdeHealth' }) do
     check('Command ' .. name, vim.fn.exists(':' .. name) == 2)
   end
   if #failed > 0 then error('Installation checks failed: ' .. table.concat(failed, ', ')) end

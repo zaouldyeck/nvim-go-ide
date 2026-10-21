@@ -34,6 +34,28 @@ function M.setup()
   map('n', '<leader>fc', telescope('commands'), 'Command palette')
   map('n', '<leader>fs', telescope('lsp_document_symbols'), 'File symbols')
   map('n', '<leader>fS', telescope('lsp_dynamic_workspace_symbols'), 'Workspace symbols')
+  -- Keep the familiar search keys alongside the Find menu.
+  map('n', '<leader>sf', telescope('find_files'), 'Find file')
+  map('n', '<leader>sg', telescope('live_grep'), 'Search project text')
+  map('n', '<leader>sw', telescope('grep_string'), 'Search word under cursor')
+  map('n', '<leader>sr', telescope('resume'), 'Resume last search')
+  map('n', '<leader>sh', telescope('help_tags'), 'Search help')
+  map('n', '<leader>sk', telescope('keymaps'), 'Search keymaps')
+  map('n', '<leader>ss', telescope('builtin'), 'Choose a Telescope search')
+  map('n', '<leader>sd', telescope('diagnostics'), 'Search diagnostics')
+  map('n', '<leader>s.', telescope('oldfiles'), 'Recent files')
+  map('n', '<leader><leader>', telescope('buffers'), 'Find open buffer')
+  map('n', '<leader>/', function()
+    require('telescope.builtin').current_buffer_fuzzy_find(
+      require('telescope.themes').get_dropdown({ previewer = false })
+    )
+  end, 'Fuzzy search current file')
+  map('n', '<leader>s/', function()
+    require('telescope.builtin').live_grep({ grep_open_files = true, prompt_title = 'Search Open Files' })
+  end, 'Search text in open files')
+  map('n', '<leader>sn', function()
+    require('telescope.builtin').find_files({ cwd = vim.fn.stdpath('config'), prompt_title = 'Neovim Configuration' })
+  end, 'Find Neovim configuration file')
   map('n', '<C-b>', function() require('go_ide.explorer').toggle() end, 'Toggle Explorer')
   map('n', '<leader>e', function() require('go_ide.explorer').toggle() end, 'Toggle Explorer')
   map('n', '<leader>E', function() require('go_ide.explorer').reveal() end, 'Reveal file in Explorer')
@@ -57,6 +79,7 @@ function M.setup()
   map('n', '<leader>cf', function() require('go_ide.lsp').format() end, 'Format and organize imports')
   map('n', '<leader>ci', function() require('go_ide.lsp').toggle_inlay_hints() end, 'Toggle inlay hints')
   map('n', '<leader>cl', vim.lsp.codelens.run, 'Run code lens')
+  map('n', '<leader>cm', go('mod_tidy'), 'Tidy Go module dependencies')
 
   map('n', '<leader>tt', go('test', 'nearest'), 'Test nearest')
   map('n', '<leader>tp', go('test', 'package'), 'Test package')
@@ -131,7 +154,7 @@ function M.setup()
     { '<leader>d', group = 'Debug' }, { '<leader>f', group = 'Find' },
     { '<leader>g', group = 'Git' }, { '<leader>j', group = 'Jump history' },
     { '<leader>m', group = 'Minimap' }, { '<leader>q', group = 'Quit' },
-    { '<leader>r', group = 'Run / rename' }, { '<leader>t', group = 'Tests' },
+    { '<leader>r', group = 'Run / rename' }, { '<leader>s', group = 'Search' }, { '<leader>t', group = 'Tests' },
     { '<leader>u', group = 'Preferences / help' }, { '<leader>w', group = 'Windows / save' },
     { '<leader>x', group = 'Problems' },
   })

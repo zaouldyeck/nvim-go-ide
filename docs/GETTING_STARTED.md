@@ -18,11 +18,15 @@ Open a normal terminal. Install the small set of system dependencies:
 sudo dnf install git curl tar unzip gcc ripgrep wl-clipboard fontconfig
 ```
 
-Extract the complete downloaded archive, open the extracted `go-ide` directory, and run:
+Clone the repository and install from its root directory:
 
 ```bash
+git clone https://github.com/zaouldyeck/nvim-go-ide.git
+cd nvim-go-ide
 bash install.sh --font
 ```
+
+If you already cloned the repository, use that checkout. A complete downloaded ZIP also works: extract it, open the directory containing `install.sh`, and run the installer there.
 
 An internet connection is needed for the first installation. The installer downloads the pinned Neovim release, installs Go development tools, installs plugins, and compiles syntax parsers. It checks release archives against the supplied SHA-256 values. It chooses native ARM64 binaries on an Asahi machine; it does not use x86 emulation.
 
@@ -56,7 +60,7 @@ In **GNOME Terminal**, use Preferences → your profile → Text → Custom font
 
 ### Start the IDE
 
-From the extracted package directory:
+From the repository or extracted package directory:
 
 ```bash
 cd sample-project
@@ -129,9 +133,52 @@ Press `K` again to focus the card. Use `j` / `k` or `Ctrl+D` / `Ctrl+U` to scrol
 
 Inside a function, begin typing a standard-library symbol such as `strings.ToUpper`. Select a completion, accept it, and finish a valid expression. Saving runs `goimports`, which formats Go code and adds or removes imports when it can resolve them. Use `:GoImports` or `:GoFormat` to request the same formatting explicitly.
 
-Use `Tab` and `Shift+Tab` to move through completion choices or snippet fields; `Ctrl+N` and `Ctrl+P` also navigate completion items. `Enter` accepts a selected completion. `Ctrl+Space` requests completion explicitly when your terminal forwards that chord.
+Use `Tab` and `Shift+Tab` to move through completion choices; `Ctrl+N` and `Ctrl+P` also navigate completion items. `Enter` accepts an item you selected. `Ctrl+Space` requests completion explicitly when your terminal forwards that chord. `Ctrl+L` and `Ctrl+H` provide dedicated snippet expansion/navigation without using Tab's completion selection behavior.
 
 The buffer must contain syntactically valid Go for the formatter to succeed. If you are halfway through an expression, finish it first; a formatting failure should not be mistaken for a language-server failure.
+
+### Use your snippets and argument placeholders
+
+In a Go buffer, type a trigger and press `Ctrl+L` to expand it. You can also select its **Snippet** entry in completion and press `Enter`. Your original templates are available as `tys` (also `struct`), `meth`, `func`, and `fmain` (also `main`). The existing `iferr`, `test`, `forr`, `iface`, `switch`, and `errf` templates remain available.
+
+| Action | Keys | When it applies |
+| --- | --- | --- |
+| Expand a trigger or jump forward | `Ctrl+L` | Insert or snippet Select mode |
+| Jump to the previous field | `Ctrl+H` | Insert or snippet Select mode |
+| Next / previous return form | `Alt+N` / `Alt+P` | While a snippet choice is active |
+| Completion selection, then snippet navigation | `Tab` / `Shift+Tab` | Select completion items first while the menu is open; otherwise expand/jump through fields |
+
+For `func` and `meth`, the return choice starts as `(T1, error)`. Change it with `Alt+N` to a single `error`, then to no return value, and then back to multiple returns. `Alt+P` cycles in the other direction. Type over `T1` or `error` to use another type. Receiver types in `meth` are editable, so use either `MyStruct` or `*MyStruct` as appropriate. `tys` and `struct` guide you through the struct name, first field name, and first field type before the remaining body.
+
+Try a function with two return values:
+
+1. On a new top-level line in a Go file, type `func`, then press `Ctrl+L`.
+2. Replace `FunctionName` with `Load`. Press `Ctrl+L` and enter `path string` as the parameters.
+3. Press `Ctrl+L` to reach `T1` in the default return form. Replace it with `string`.
+4. Press `Ctrl+L` to reach `error`; leave it as-is. Press `Ctrl+L` again to reach the body and enter `return path, nil`.
+5. Press `Esc`, then save. The result is:
+
+```go
+func Load(path string) (string, error) {
+	return path, nil
+}
+```
+
+For a no-return function, cycle the return choice until it is empty, then jump to the body. The templates help build the declaration; you still supply a body and return statements appropriate to the types you chose.
+
+**Snippet jumps require active placeholders.** Accepting a gopls function completion can create fields for the call's arguments; `Ctrl+L` advances through those fields and `Ctrl+H` goes back. Reopening an ordinary call or moving into code that was already written does not create a snippet session. Use normal editing motions for that code, and `Ctrl+K` in Insert mode to display its signature. Also, the parameters field in the custom `func` template is one editable field: it does not automatically create a separate jump position for each parameter you type.
+
+Outside an available snippet expansion/jump or choice, the dedicated keys fall back to their normal behavior. In Normal mode, `Ctrl+H` and `Ctrl+L` continue to move between windows. Some terminals encode Backspace as `Ctrl+H`; use Tab/Shift+Tab with completion closed if that causes a conflict. If `Alt+N`/`Alt+P` are intercepted by your desktop, terminal, or tmux, configure that layer to pass the keys through to Neovim.
+
+### Edit and reload personal snippets
+
+The source module is `config/lua/custom/snippets.lua` in the repository. With default paths, the installed copy is `~/.config/nvim-go/lua/custom/snippets.lua`. Edit the installed file for an immediate local change, save it, then run:
+
+```vim
+:GoSnippetsReload
+```
+
+Reloading updates the registered templates without duplicating completion entries. Start a fresh snippet expansion to try a changed template. Keep lasting edits in the repository copy too, because reinstalling replaces the installed configuration with the checkout's files. To locate your actual profile configuration when using custom XDG paths, run `:echo stdpath('config')`.
 
 ### Follow an error
 
@@ -143,7 +190,7 @@ Diagnostics include type errors and configured analysis findings. They are separ
 
 Place the cursor on `NewCliConfig` and press `F2` or `Space r n`. Enter a new name. `gopls` updates references across the relevant project files. Use `:wall` to save all the edits and inspect your Git diff afterward, just as you would after a refactor in VS Code.
 
-Code actions are context-sensitive. On an appropriate expression or selection they can offer operations such as implementing an interface, filling a struct literal, extracting a function, or adding/removing struct tags. Press `Space c a` to see what is available at that location. [Gopls transformations](https://go.dev/gopls/features/transformation)
+Code actions are context-sensitive. On an appropriate expression or selection they can offer operations such as implementing an interface, filling a struct literal, extracting a function, or adding/removing struct tags. Press `Space c a` to see what is available at that location in a Telescope dropdown. Type to filter, select an action with the arrow keys or `Ctrl+J`/`Ctrl+K`, then press `Enter`; `Esc` cancels. [Gopls transformations](https://go.dev/gopls/features/transformation)
 
 ### Run the CLI
 
@@ -191,6 +238,8 @@ You can also position the cursor in a test and use `:GoDebugTest` or `Space d r`
 
 Use `Space f f` for known filenames and `Space f g` to search project text. `Space f c` opens the command palette. Explorer is useful for understanding directory structure and creating or renaming files. A **buffer** is an open file; a **window** is a view of a buffer. Two splits can display the same buffer, and closing one window does not necessarily close the file.
 
+Your original search shortcuts are also available. Use `Space /` for a compact fuzzy search of the current buffer, `Space s w` to search the word under the cursor, and `Space s r` to resume the last picker. `Space s /` restricts text search to open buffers. `Space s n` finds files in the active Neovim profile, `Space s h` searches help, and `Space s k` finds key mappings. `Space Space` chooses an open buffer. The `Space s f`, `s g`, and `s .` aliases find files, search project text, and list recent files; existing `Space f ...` mappings remain unchanged.
+
 The Neo-tree Explorer starts 40 columns wide. Its blue open-folder icon and bold italic path identify the current root, using `~` for your home directory. Dotfiles and ignored entries are filtered initially; a row such as **(2 hidden items)** reports the current count. Press `H` while Explorer is focused to show or hide filtered entries. Press `?` for its local help. `Enter` opens files or expands folders; `a` adds an item, `A` adds a directory, `r` renames, and `d` requests deletion with confirmation.
 
 Keep one project per Neovim instance while learning the setup. To change project, save your work, quit, `cd` into the next project, and launch `nvim-go` again. This avoids accidentally running shell commands in an earlier working directory.
@@ -202,6 +251,8 @@ The Problems panel collects language-server diagnostics. The Go output buffer ho
 ### Formatting, hints, and code actions
 
 Formatting on save is enabled for Go files. `:GoFormatToggle` switches it for the current IDE session. `:GoInlayHints` toggles parameter/type hints, which start off to preserve the uncluttered screenshot style. `Space c l` runs an available code-lens action at the cursor; `:GoCodeLens` toggles the displayed lenses.
+
+For module maintenance, use `Space c m` or `:GoModTidy` from a Go file, `go.mod`, or `go.sum`. It runs `go mod tidy` asynchronously in that file's nearest module and sends output to the Go output panel. Before starting, it saves modified named Go buffers belonging to that module plus its open `go.mod` and `go.sum` buffers; nested modules are excluded. Afterward, it reloads metadata buffers that have no unsaved edits and preserves unsaved changes made while the task was running for you to review. Use `Space t o` / `:GoOutput` to return to the output, or `Space t s` / `:GoStop` to cancel the task. In a workspace it affects the active file's module. Review the resulting `go.mod` and `go.sum` diff. Ordinary Go saves run formatting/import organization; they do not run module tidy.
 
 Run, test, and debug actions save modified named Go buffers in the active module before executing. This helps ensure that the code being run includes recent edits and refactors. Use `:wall` explicitly when a change spans other file types or multiple modules.
 
@@ -291,7 +342,17 @@ The terminal renders the final font and spacing. If the colours match but the la
 
 The package pins its tool versions in `scripts/versions.env` and plugin revisions in `lazy-lock.json`. This is a reproducible starting point. Normal editing does not require redownloading plugins once installation has completed; Go may still need network access when a project adds dependencies or requests a different toolchain.
 
-Keep the downloaded package. To move from the earlier package to this revision, extract the new ZIP into a fresh directory and open its `go-ide` folder. Run `bash install.sh --font`, followed by `bash scripts/check.sh ~/.local/bin/nvim-go`. Reinstalling applies this package's configuration and pinned tooling, while moving an existing `nvim-go` configuration and launcher to timestamped backups. Keep a copy of any personal changes you want to carry over, then reapply them selectively after installation.
+The repository checkout and the installed profile are separate copies. To update, save your files and close all `nvim-go` sessions. Preserve changes you made in the checkout before pulling, and keep any installed settings or custom snippets you want to carry over. Then run these commands from the repository root:
+
+```bash
+git pull --ff-only
+bash install.sh
+bash scripts/check.sh ~/.local/bin/nvim-go
+```
+
+Pulling alone does not update the active profile. Reinstalling applies the checkout's configuration and pinned tooling, while moving the existing `nvim-go` configuration and launcher to timestamped backups. It does not merge personal edits. Reapply those edits selectively from the backup paths printed by the installer, especially `lua/custom/snippets.lua` and `lua/go_ide/settings.lua`. Add `--font` when the optional font also needs installing. The installer leaves the repository checkout in place.
+
+If you originally installed from a ZIP, clone the repository as described in section 1 and run its installer. A downloaded release archive also works: extract the complete archive and run `bash install.sh` from the directory containing it. Retain a known-good commit or package for rollback.
 
 For routine inspection, `:Lazy` opens the plugin manager. Avoid indiscriminately updating every plugin during your first week; the delivered revisions were selected and tested together. If you choose to experiment, back up the installed configuration and lockfile first. `:Lazy restore` restores the revisions recorded in the active lockfile.
 
@@ -302,7 +363,7 @@ mv ~/.config/nvim-go ~/.config/nvim-go.after-install
 mv ~/.config/nvim-go.backup-20261020-190000-12345 ~/.config/nvim-go
 ```
 
-The timestamp above is illustrative; use your actual backup name. Restoring configuration alone does not roll back tool binaries or plugin data. To return to an older complete release, reinstall that retained package, restore your desired settings, and restore its lockfile revisions.
+The timestamp above is illustrative; use your actual backup name. Restoring configuration alone does not roll back tool binaries or plugin data. To return to an older complete release, install a checkout or archive of that revision, restore your desired settings, and restore its lockfile revisions.
 
 Default locations are:
 
@@ -343,6 +404,8 @@ Focus Explorer and press `H` to reveal filtered files, including dotfiles and ig
 ### A shortcut does nothing
 
 Press `Esc` and try the documented `Space` mapping. Some desktop and terminal shortcuts never reach Neovim, and traditional terminal encodings cannot distinguish every Ctrl/Shift combination. Function keys may require `Fn` or a keyboard mode change. Use the leader alternative or the explicit `:Go...` command. [Neovim terminal input documentation](https://neovim.io/doc/user/tui/#tui-input)
+
+For snippet navigation, stay in Insert or snippet Select mode. Type a known trigger such as `func` and try `Ctrl+L`; an existing function call only supports jumps if its snippet placeholders are still active. Tab chooses completion items while the menu is open, so use the dedicated Ctrl keys for snippet navigation. If the new templates are missing after an update, confirm you reran the installer and restarted the profile; use `:GoSnippetsReload` after local template edits. Check terminal/tmux passthrough if only the Alt choice keys fail.
 
 ### Colours look washed out, or tabs, breadcrumbs, or the minimap are missing
 
