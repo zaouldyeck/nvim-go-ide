@@ -2,13 +2,14 @@
 return {
   icons = true,                 -- false if you prefer plain text over Nerd Font icons
   auto_explorer = true,
-  explorer_width = 40,
-  statusline_theme = 'horizon', -- your rose Normal / cyan Insert bar, on both ends
-  breadcrumbs = false,         -- toggle with Space u b when you want symbol context
-  always_show_tabs = false,     -- file tabs appear automatically with multiple files
-  minimap = false,              -- toggle with Space m m; automatically sized for wide editors
+  explorer_width = 34,
+  statusline_theme = 'horizon', -- keep the original per-pane Horizon status bars
+  breadcrumbs = true,          -- VS Code-like file/symbol context below the tabs; toggle with Space u b
+  editor_top_padding = true,   -- one blank row above code when breadcrumbs are hidden
+  always_show_tabs = true,      -- keep the file-tab strip visible like a GUI editor
+  minimap = true,               -- enabled automatically on sufficiently wide editor windows
   minimap_min_columns = 160,
-  minimap_width = 12,
+  minimap_width = 10,
   format_on_save = true,
   inlay_hints = false,          -- keep the source uncluttered; toggle with Space c i
   codelens = true,
@@ -20,7 +21,8 @@ return {
   hover_border = 'rounded',
   -- Palette sampled from your current Neovim screenshot.
   colors = {
-    bg = '#1a1b26', panel = '#16161e', tab = '#16161e', selection = '#292e42',
+    bg = '#1a1b26', panel = '#16161e', tab = '#16161e', chrome = '#171821',
+    active_tab = '#24283b', selection = '#292e42',
     line = '#292e42', border = '#1c1e2b', fg = '#c0caf5', fg_dim = '#a9b1d6',
     muted = '#565f89', hidden = '#424455', gutter = '#3b4261', comment = '#565f89',
     coral = '#f7768e', teal = '#0db9d7', purple = '#9d7cd8', mauve = '#bb9af7',

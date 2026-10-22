@@ -44,7 +44,8 @@ o.smartindent = true
 o.showmode = false
 o.laststatus = 2
 o.showtabline = s.always_show_tabs and 2 or 0
-o.cmdheight = 1
+o.cmdheight = 0
+o.winborder = 'rounded'
 o.shortmess:append('cI')
 o.fillchars = { eob = ' ', fold = ' ', vert = '│', horiz = '─' }
 o.list = s.show_whitespace

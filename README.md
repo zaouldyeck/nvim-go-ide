@@ -36,8 +36,8 @@ cd ~/code/golang/cli
 
 | Area | Features |
 | --- | --- |
-| Appearance | Screenshot-sampled navy palette, italic purple keywords, cyan Go gophers, relative line numbers, tab guides, Horizon status line with rose-red Normal and cyan Insert accents at both ends, automatic open-file tabs, optional breadcrumbs and minimap |
-| Navigation | Neo-tree Explorer with a blue folder icon, bold italic directory header and hidden-file summary; fuzzy file/buffer search, project and open-buffer text search, search history, outline, document/workspace symbols, split windows, definition/reference/implementation jumps |
+| Appearance | Screenshot-sampled navy palette, italic purple keywords, cyan Go gophers, relative line numbers, tab guides, rounded-card file tabs, breadcrumb header, wide-screen minimap, and the original Horizon per-pane status bars |
+| Navigation | Neo-tree Explorer with a blue folder icon, bold directory header and hidden-file summary; fuzzy file/buffer search, project and open-buffer text search, search history, outline, document/workspace symbols, split windows, definition/reference/implementation jumps |
 | Go editing | gopls, completion, custom LuaSnip templates with return-type choices and Ctrl+L/Ctrl+H navigation, rounded bordered signature help and rich hover docs, rename, dropdown code actions, import management, format on save, explicit module tidy, optional inlay hints and code lenses |
 | Execution | Run the current package in a terminal with stdin support; run nearest/file/package/module tests; navigable failure locations; coverage markers |
 | Debugging | Delve, breakpoints and conditional breakpoints, step/continue, locals, watches, call stacks, expression evaluation, nearest-test debugging, compatible Go launch.json entries |
@@ -56,17 +56,36 @@ preferences, and diagnostics. Press **Esc**, then **Space** and pause to discove
 the available actions. For example, **Space f f** finds a file and **Space t t**
 runs the nearest test.
 
-The default view stays compact: file tabs appear when more than one file is
-open, while breadcrumbs and the minimap start hidden. Use **Space u b** for
-breadcrumbs, **Space m m** for the minimap, and **Space u n** to switch line
-number styles. Search, the symbol outline, tests, and debugging remain available
-in this layout.
+The default view keeps a GUI-editor style chrome: the file-tab strip is always
+visible, breadcrumbs stay directly below it for file/symbol context, and the
+minimap opens automatically on sufficiently wide editor windows. Use **Space u b**
+to hide/show breadcrumbs, **Space m m** to toggle the minimap, and **Space u n**
+to switch line number styles. Search, the symbol outline, tests, and debugging
+remain available in this layout.
 
-The Explorer is 40 columns wide. Its header keeps the beginning of the directory
+The row directly below the file tabs is reserved for editor context. By default
+it contains breadcrumbs; hiding breadcrumbs leaves the same row blank, so the
+first source line never presses against the tab strip. Set
+`editor_top_padding = false` in `:GoIdeSettings` to remove the blank row when
+breadcrumbs are disabled.
+
+The main editor deliberately stays unframed. Neo-tree uses a slightly darker
+panel background with no visible vertical divider, inactive file tabs blend into
+the top chrome, and the active file uses Nerd Font semicircle caps to form a
+compact rounded card. Breadcrumbs sit on their own dark header strip below the
+tabs, giving the editor the same breathing room without drawing lines through
+the code area. When breadcrumbs are hidden, their row becomes the blank spacer
+instead.
+
+The rounded four-sided border used by documentation, signature help and other
+floating cards remains reserved for floating windows; regular editing splits
+cannot use Neovim's floating-window border API.
+
+The Explorer is 34 columns wide. Its header keeps the beginning of the directory
 path, replacing your home directory with `~` when applicable. Press **H** inside
 Explorer to show or hide filtered files, and **?** for its local key reference.
-The active editor's status line uses Horizon's **`#e95678`** in Normal mode and
-**`#25b2bc`** in Insert mode; inactive panes have subdued status lines.
+The original per-pane Horizon status bars are preserved, including the coloured
+mode and location segments and Powerline separators shown in the existing setup.
 
 Press **K** on a Go symbol for syntax-coloured documentation in a dark card
 with a rounded blue border. Press **K** again to focus it, scroll with **j/k**
@@ -191,5 +210,5 @@ their original licenses continue to apply. It does not bundle their binaries.
 - [lazy.nvim lockfiles](https://lazy.folke.io/usage/lockfile)
 - [nvim-treesitter compatibility branch](https://github.com/nvim-treesitter/nvim-treesitter/tree/master)
 - [Neo-tree v3.x](https://github.com/nvim-neo-tree/neo-tree.nvim/tree/v3.x)
-- [lualine Horizon theme](https://github.com/nvim-lualine/lualine.nvim/blob/221ce6b2d999187044529f49da6554a92f740a96/lua/lualine/themes/horizon.lua)
+- [lualine.nvim](https://github.com/nvim-lualine/lualine.nvim)
 - [Neovim hover documentation](https://neovim.io/doc/user/lsp/#vim.lsp.buf.hover())
