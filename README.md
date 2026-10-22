@@ -36,8 +36,8 @@ cd ~/code/golang/cli
 
 | Area | Features |
 | --- | --- |
-| Appearance | Screenshot-sampled navy palette, italic purple keywords, cyan Go gophers, relative line numbers, tab guides, rounded-card file tabs, breadcrumb header, wide-screen minimap, and one global Horizon status bar |
-| Navigation | Neo-tree Explorer with a blue folder icon, bold italic directory header and hidden-file summary; fuzzy file/buffer search, project and open-buffer text search, search history, outline, document/workspace symbols, split windows, definition/reference/implementation jumps |
+| Appearance | Screenshot-sampled navy palette, italic purple keywords, cyan Go gophers, relative line numbers, tab guides, rounded-card file tabs, breadcrumb header, wide-screen minimap, and one continuous global status bar |
+| Navigation | Neo-tree Explorer with a blue folder icon, bold directory header and hidden-file summary; fuzzy file/buffer search, project and open-buffer text search, search history, outline, document/workspace symbols, split windows, definition/reference/implementation jumps |
 | Go editing | gopls, completion, custom LuaSnip templates with return-type choices and Ctrl+L/Ctrl+H navigation, rounded bordered signature help and rich hover docs, rename, dropdown code actions, import management, format on save, explicit module tidy, optional inlay hints and code lenses |
 | Execution | Run the current package in a terminal with stdin support; run nearest/file/package/module tests; navigable failure locations; coverage markers |
 | Debugging | Delve, breakpoints and conditional breakpoints, step/continue, locals, watches, call stacks, expression evaluation, nearest-test debugging, compatible Go launch.json entries |
@@ -63,10 +63,11 @@ to hide/show breadcrumbs, **Space m m** to toggle the minimap, and **Space u n**
 to switch line number styles. Search, the symbol outline, tests, and debugging
 remain available in this layout.
 
-One blank screen row separates file tabs from the code. The gap also appears in
-new files and splits. Enabling breadcrumbs uses that same row; hiding them
-restores the blank gap. To remove it, set `editor_top_padding = false` in
-`:GoIdeSettings` and restart the editor.
+The row directly below the file tabs is reserved for editor context. By default
+it contains breadcrumbs; hiding breadcrumbs leaves the same row blank, so the
+first source line never presses against the tab strip. Set
+`editor_top_padding = false` in `:GoIdeSettings` to remove the blank row when
+breadcrumbs are disabled.
 
 The main editor deliberately stays unframed. Neo-tree uses a slightly darker
 panel background with a low-contrast divider, inactive file tabs blend into the
@@ -84,8 +85,8 @@ cannot use Neovim's floating-window border API.
 The Explorer is 34 columns wide. Its header keeps the beginning of the directory
 path, replacing your home directory with `~` when applicable. Press **H** inside
 Explorer to show or hide filtered files, and **?** for its local key reference.
-The global status bar uses the Horizon mode accents while avoiding Powerline
-triangles between every section, so it reads as one continuous IDE status bar.
+The global status bar stays dark from edge to edge; only the mode badge changes
+colour. Section backgrounds and Powerline triangles are deliberately avoided.
 
 Press **K** on a Go symbol for syntax-coloured documentation in a dark card
 with a rounded blue border. Press **K** again to focus it, scroll with **j/k**
@@ -210,5 +211,5 @@ their original licenses continue to apply. It does not bundle their binaries.
 - [lazy.nvim lockfiles](https://lazy.folke.io/usage/lockfile)
 - [nvim-treesitter compatibility branch](https://github.com/nvim-treesitter/nvim-treesitter/tree/master)
 - [Neo-tree v3.x](https://github.com/nvim-neo-tree/neo-tree.nvim/tree/v3.x)
-- [lualine Horizon theme](https://github.com/nvim-lualine/lualine.nvim/blob/221ce6b2d999187044529f49da6554a92f740a96/lua/lualine/themes/horizon.lua)
+- [lualine.nvim](https://github.com/nvim-lualine/lualine.nvim)
 - [Neovim hover documentation](https://neovim.io/doc/user/lsp/#vim.lsp.buf.hover())

@@ -2,6 +2,38 @@ local s = require('go_ide.settings')
 local c = s.colors
 local chrome = c.chrome or c.tab
 local active_tab = c.active_tab or c.selection
+local statusline_theme = {
+  normal = {
+    a = { fg = c.panel, bg = '#e95678', gui = 'bold' },
+    b = { fg = c.fg_dim, bg = c.panel },
+    c = { fg = c.fg_dim, bg = c.panel },
+  },
+  insert = {
+    a = { fg = c.panel, bg = c.accent, gui = 'bold' },
+    b = { fg = c.fg_dim, bg = c.panel },
+    c = { fg = c.fg_dim, bg = c.panel },
+  },
+  visual = {
+    a = { fg = c.panel, bg = c.orange, gui = 'bold' },
+    b = { fg = c.fg_dim, bg = c.panel },
+    c = { fg = c.fg_dim, bg = c.panel },
+  },
+  replace = {
+    a = { fg = c.panel, bg = c.red, gui = 'bold' },
+    b = { fg = c.fg_dim, bg = c.panel },
+    c = { fg = c.fg_dim, bg = c.panel },
+  },
+  command = {
+    a = { fg = c.panel, bg = c.green, gui = 'bold' },
+    b = { fg = c.fg_dim, bg = c.panel },
+    c = { fg = c.fg_dim, bg = c.panel },
+  },
+  inactive = {
+    a = { fg = c.muted, bg = c.panel },
+    b = { fg = c.muted, bg = c.panel },
+    c = { fg = c.muted, bg = c.panel },
+  },
+}
 local tab_highlights = {
   fill = { bg = chrome },
   background = { fg = c.muted, bg = chrome, italic = false },
@@ -135,9 +167,8 @@ return {
     dependencies = { 'nvim-tree/nvim-web-devicons', 'SmiteshP/nvim-navic' },
     opts = {
       options = {
-        -- The reference uses Horizon's statusline on the darker editor palette.
-        -- Lualine applies each mode's accent to both a (mode) and z (location).
-        theme = s.statusline_theme,
+        -- Keep one continuous dark status bar; only the mode badge changes colour.
+        theme = statusline_theme,
         icons_enabled = s.icons,
         component_separators = { left = ' ', right = ' ' },
         section_separators = { left = '', right = '' },
