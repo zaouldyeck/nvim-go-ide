@@ -14,10 +14,11 @@ function M.run()
     local executable = require('go_ide.lsp').tool(name)
     check(name, vim.fn.executable(executable) == 1, vim.fn.exepath(executable))
   end
-  for _, name in ipairs({ 'cmp', 'neo-tree', 'bufferline', 'telescope', 'aerial', 'codewindow', 'trouble', 'dap', 'dapui' }) do
+  for _, name in ipairs({ 'cmp', 'neo-tree', 'telescope', 'aerial', 'codewindow', 'trouble', 'dap', 'dapui' }) do
     local ok, result = pcall(require, name)
     check('Plugin ' .. name, ok, not ok and tostring(result) or nil)
   end
+  check('Native tabline', type(_G.GoIdeTabline) == 'function' and vim.o.tabline:find('GoIdeTabline', 1, true) ~= nil)
   local parser_ok, parser_error = pcall(vim.treesitter.language.add, 'go')
   check('Go parser', parser_ok, not parser_ok and tostring(parser_error) or nil)
   for _, name in ipairs({ 'GoRun', 'GoTest', 'GoFormat', 'GoModTidy', 'GoSnippetsReload', 'GoCoverage', 'GoDebugTest', 'GoTerminal', 'GoIdeHealth' }) do
