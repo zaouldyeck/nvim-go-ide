@@ -67,6 +67,17 @@ new files and splits. Enabling breadcrumbs uses that same row; hiding them
 restores the blank gap. To remove it, set `editor_top_padding = false` in
 `:GoIdeSettings` and restart the editor.
 
+With breadcrumbs hidden, the code pane has a subtle blue-grey rule below its
+spacer row and matching split dividers. The Explorer divider lines up with the
+tab strip, and file tabs have slanted sides with a blue active label.
+Set `editor_borders = false` to hide the header rule and soften the dividers
+while keeping the spacing. The plain-icon
+fallback uses simple vertical tab separators. These are native split edges;
+complete rounded four-sided borders are reserved for floating documentation
+and other popup windows.
+
+![Editor pane rule and file tab styling](docs/nvim-go-pane-borders.png)
+
 The Explorer is 40 columns wide. Its header keeps the beginning of the directory
 path, replacing your home directory with `~` when applicable. Press **H** inside
 Explorer to show or hide filtered files, and **?** for its local key reference.

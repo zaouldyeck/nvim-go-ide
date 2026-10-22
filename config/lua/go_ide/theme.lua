@@ -1,6 +1,8 @@
 local M = {}
 function M.setup()
-  local c = require('go_ide.settings').colors
+  local s = require('go_ide.settings')
+  local c = s.colors
+  local frame = s.editor_borders ~= false and (c.frame or c.inline_code or c.gutter) or c.border
   vim.cmd('highlight clear')
   vim.g.colors_name = 'go-night'
   local function h(name, fg, bg, extra)
@@ -18,7 +20,7 @@ function M.setup()
   h('@markup.raw.markdown_inline', c.link, c.inline_code, { underline = false })
   h('CursorLine', nil, c.line); h('CursorLineNr', c.orange, c.bg, { bold = true })
   h('LineNr', c.gutter, c.bg); h('SignColumn', c.gutter, c.bg)
-  h('EndOfBuffer', c.bg, c.bg); h('WinSeparator', c.border, c.bg)
+  h('EndOfBuffer', c.bg, c.bg); h('WinSeparator', frame, c.bg)
   h('Visual', nil, c.visual); h('Search', c.fg, c.search)
   h('IncSearch', c.bg, c.orange); h('CurSearch', c.bg, c.orange)
   h('MatchParen', c.orange, c.selection, { bold = true })
@@ -39,6 +41,7 @@ function M.setup()
   h('PmenuSbar', nil, c.selection); h('PmenuThumb', nil, c.muted)
   h('StatusLine', c.fg_dim, c.bg); h('StatusLineNC', c.muted, c.panel)
   h('WinBar', c.fg_dim, c.bg); h('WinBarNC', c.muted, c.bg)
+  h('GoIdeEditorFrame', c.fg_dim, c.bg, { underline = true, sp = frame })
   h('TabLine', c.fg_dim, c.tab); h('TabLineFill', c.muted, c.tab)
   h('TabLineSel', c.fg, c.bg)
   for name, color in pairs({ Error = c.red, Warn = c.yellow, Info = c.blue, Hint = c.teal }) do
@@ -83,7 +86,7 @@ function M.setup()
   -- Tree-sitter owns keyword styling, including the screenshot's italic forms.
   vim.api.nvim_set_hl(0, '@lsp.type.keyword', {})
   h('NeoTreeNormal', c.fg_dim, c.panel); h('NeoTreeNormalNC', c.fg_dim, c.panel)
-  h('NeoTreeEndOfBuffer', c.bg, c.panel); h('NeoTreeWinSeparator', c.border, c.panel)
+  h('NeoTreeEndOfBuffer', c.bg, c.panel); h('NeoTreeWinSeparator', frame, c.panel)
   h('NeoTreeCursorLine', nil, c.selection)
   h('NeoTreeRootName', c.fg_dim, c.panel, { bold = true, italic = true })
   h('NeoTreeDirectoryName', c.fg_dim); h('NeoTreeDirectoryIcon', c.blue)

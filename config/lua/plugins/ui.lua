@@ -1,5 +1,30 @@
 local s = require('go_ide.settings')
 local c = s.colors
+local frame = s.editor_borders ~= false and (c.frame or c.inline_code or c.gutter) or c.border
+local tab_highlights = {
+  fill = { bg = c.tab }, background = { fg = c.fg_dim, bg = c.bg },
+  buffer_selected = { fg = c.blue, bg = c.selection, bold = true, italic = false },
+  buffer_visible = { fg = c.fg_dim, bg = c.bg, italic = false },
+  separator = { fg = s.icons and c.tab or frame, bg = c.bg },
+  separator_visible = { fg = s.icons and c.tab or frame, bg = c.bg },
+  separator_selected = { fg = s.icons and c.tab or frame, bg = c.selection },
+  offset_separator = { fg = frame, bg = c.panel },
+}
+-- Keep every part of a tab on the same background, including diagnostics and
+-- duplicate-path labels, so the selected tab reads as one continuous shape.
+for _, suffix in ipairs({ '', '_visible', '_selected' }) do
+  local bg = suffix == '_selected' and c.selection or c.bg
+  for name, color in pairs({
+    close_button = c.muted, modified = c.yellow, duplicate = c.muted,
+    numbers = c.fg_dim, diagnostic = c.fg_dim,
+    error = c.red, error_diagnostic = c.red,
+    warning = c.yellow, warning_diagnostic = c.yellow,
+    info = c.blue, info_diagnostic = c.blue,
+    hint = c.teal, hint_diagnostic = c.teal,
+  }) do
+    tab_highlights[name .. suffix] = { fg = color, bg = bg, italic = false }
+  end
+end
 local plain_icons = {}
 for _, kind in ipairs({ 'File', 'Module', 'Namespace', 'Package', 'Class', 'Method', 'Property', 'Field', 'Constructor', 'Enum', 'Interface', 'Function', 'Variable', 'Constant', 'String', 'Number', 'Boolean', 'Array', 'Object', 'Key', 'Null', 'EnumMember', 'Struct', 'Event', 'Operator', 'TypeParameter' }) do
   plain_icons[kind] = ''
@@ -83,30 +108,22 @@ return {
     dependencies = { 'nvim-tree/nvim-web-devicons' },
     opts = {
       options = {
-        mode = 'buffers', numbers = 'none', separator_style = 'thin',
+        mode = 'buffers', numbers = 'none',
+        separator_style = s.icons and 'slant' or { '│', '│' },
+        indicator = { style = 'none' },
         diagnostics = 'nvim_lsp', diagnostics_update_in_insert = false,
         diagnostics_indicator = function(count) return ' ' .. count end,
         modified_icon = '●', buffer_close_icon = '×', close_icon = '×',
         show_buffer_icons = s.icons, show_close_icon = false,
         always_show_bufferline = s.always_show_tabs, enforce_regular_tabs = false,
-        offsets = { { filetype = 'neo-tree', text = 'Explorer', text_align = 'left', padding = 2, separator = true } },
+        -- Offset padding extends the entire sidebar: zero keeps this divider
+        -- in the same screen column as the actual Explorer split below it.
+        offsets = { { filetype = 'neo-tree', text = 'Explorer', text_align = 'left', padding = 0, separator = '│' } },
         close_command = function(buf) require('go_ide.ui').close_buffer(buf) end,
         right_mouse_command = function(buf) require('go_ide.ui').close_buffer(buf) end,
         custom_filter = function(buf) return vim.bo[buf].buftype == '' end,
       },
-      highlights = {
-        fill = { bg = c.tab }, background = { fg = c.fg_dim, bg = c.tab },
-        buffer_selected = { fg = c.fg, bg = c.bg, bold = false, italic = false },
-        buffer_visible = { fg = c.fg_dim, bg = c.tab },
-        separator = { fg = c.border, bg = c.tab },
-        separator_selected = { fg = c.border, bg = c.bg },
-        indicator_selected = { fg = c.accent, bg = c.bg },
-        modified = { fg = c.yellow, bg = c.tab }, modified_selected = { fg = c.yellow, bg = c.bg },
-        close_button = { fg = c.muted, bg = c.tab }, close_button_selected = { fg = c.muted, bg = c.bg },
-        error_selected = { fg = c.red, bg = c.bg }, error_diagnostic_selected = { fg = c.red, bg = c.bg },
-        warning_selected = { fg = c.yellow, bg = c.bg }, warning_diagnostic_selected = { fg = c.yellow, bg = c.bg },
-        offset_separator = { fg = c.border, bg = c.panel },
-      },
+      highlights = tab_highlights,
     },
   },
   { 'SmiteshP/nvim-navic', opts = { highlight = true, icons = not s.icons and plain_icons or nil, separator = '  ›  ', depth_limit = 5, lsp = { auto_attach = true, preference = { 'gopls' } } } },
