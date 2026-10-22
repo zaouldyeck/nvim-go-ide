@@ -1,12 +1,10 @@
 local s = require('go_ide.settings')
 local M = { panels = {}, minimap_enabled = s.minimap, breadcrumbs_enabled = s.breadcrumbs ~= false }
 local breadcrumb_winbar = '%{%v:lua.GoIdeBreadcrumb()%}'
-local editor_spacer = '%#GoIdeEditorFrame# '
 local function editor_winbar()
   if M.breadcrumbs_enabled then return breadcrumb_winbar end
-  -- A non-empty winbar reserves a screen row without adding text to the file.
-  if s.editor_top_padding == false then return '' end
-  return s.editor_borders ~= false and editor_spacer or ' '
+  -- Keep the breathing room even when breadcrumbs are toggled off.
+  return s.editor_top_padding ~= false and ' ' or ''
 end
 function M.close_buffer(buf)
   buf = buf or vim.api.nvim_get_current_buf()
@@ -38,11 +36,11 @@ function M.breadcrumb()
     local icon = require('nvim-web-devicons').get_icon(name, vim.bo[buf].filetype, { default = true })
     prefix = '%#DevIconGo#' .. (icon or '') .. '  '
   end
-  local value = '  ' .. prefix .. '%#WinBar#' .. name
+  local value = '  ' .. prefix .. '%#GoIdeBreadcrumbFile#' .. name
   local navic = require('nvim-navic')
   if navic.is_available() then
     local location = navic.get_location()
-    if location ~= '' then value = value .. '  ›  ' .. location end
+    if location ~= '' then value = value .. '%#GoIdeBreadcrumbSeparator#  ›  ' .. location end
   end
   return value
 end
@@ -134,8 +132,7 @@ function M.setup()
         vim.wo.winbar = editor_winbar()
       elseif vim.bo.filetype == 'goideoutput' then M.set_panel(vim.api.nvim_get_current_win(), 'output')
       elseif vim.bo.filetype == 'Trouble' then M.set_panel(vim.api.nvim_get_current_win(), 'problems')
-      elseif vim.wo.winbar == ' ' or vim.wo.winbar == editor_spacer
-        or vim.wo.winbar == breadcrumb_winbar then
+      elseif vim.wo.winbar == ' ' or vim.wo.winbar == breadcrumb_winbar then
         -- A split may inherit our header before becoming an Explorer/help pane.
         vim.wo.winbar = ''
       end
