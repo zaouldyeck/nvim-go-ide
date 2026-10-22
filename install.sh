@@ -71,7 +71,7 @@ if ((missing)); then
     printf '\nFedora / Fedora Asahi Remix:\n  sudo dnf install git curl tar unzip gcc ripgrep wl-clipboard fontconfig\n'
     printf '\nDebian / Ubuntu:\n  sudo apt install git curl tar unzip gcc ripgrep wl-clipboard fontconfig\n'
   else
-    printf '\nmacOS: install Command Line Tools (xcode-select --install), then brew install git ripgrep\n'
+    printf '\nmacOS: install Command Line Tools (xcode-select --install), then install Homebrew if needed and run brew install ripgrep\n'
   fi
   exit 1
 fi

@@ -32,6 +32,51 @@ cd ~/code/golang/cli
 ~/.local/bin/nvim-go .
 ```
 
+## Install on macOS
+
+The primary macOS path targets **Apple Silicon** on current macOS. As of October
+2026, the latest release is macOS Golden Gate 27.x. The commands below are
+version-agnostic and use the repository's own pinned Neovim and Go toolchain.
+
+Install Apple's Command Line Tools, then install Homebrew and `ripgrep` if
+needed:
+
+```bash
+xcode-select --install
+
+# If Homebrew is not already installed:
+# /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+# Follow Homebrew's printed shellenv instructions, then:
+brew install ripgrep
+```
+
+Clone and install the profile:
+
+```bash
+git clone https://github.com/zaouldyeck/nvim-go-ide.git
+cd nvim-go-ide
+bash install.sh --font
+bash scripts/check.sh ~/.local/bin/nvim-go
+cd sample-project
+~/.local/bin/nvim-go main.go
+```
+
+The installer automatically selects the native macOS ARM64 Neovim archive on
+Apple Silicon and installs the Nerd Font under `~/Library/Fonts`. Select
+**JetBrainsMono Nerd Font Mono** in your terminal and reopen the terminal before
+judging the layout. Keep the terminal at roughly **140 columns or wider** if you
+want the minimap visible by default.
+
+For the closest visual match, use an opaque true-colour terminal. Ghostty,
+iTerm2 and Terminal.app all work; Ghostty-specific font settings are documented
+in [the macOS setup guide](docs/MACOS.md).
+
+macOS already provides `pbcopy`/`pbpaste`, which Neovim can use as its system
+clipboard provider, so no `wl-clipboard` equivalent is required.
+
+For the full macOS walkthrough, appearance settings, verification steps and
+troubleshooting, see [docs/MACOS.md](docs/MACOS.md).
+
 ## What is included
 
 | Area | Features |
@@ -47,6 +92,7 @@ cd ~/code/golang/cli
 ## Start here
 
 - Read [the getting-started guide](docs/GETTING_STARTED.md).
+- On macOS, follow [the macOS installation guide](docs/MACOS.md).
 - Keep [the complete shortcut reference](docs/SHORTCUTS.md) nearby.
 - Open the printable `nvim-go-getting-started.pdf` supplied with this package.
 - Review [what was actually tested](docs/VALIDATION.md).
