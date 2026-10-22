@@ -6,6 +6,96 @@ local function editor_winbar()
   -- Keep the breathing room even when breadcrumbs are toggled off.
   return s.editor_top_padding ~= false and ' ' or ''
 end
+
+local function escape_tabline(text)
+  return (text or ''):gsub('%%', '%%%%')
+end
+
+local function explorer_tab_offset()
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    if vim.api.nvim_win_get_config(win).relative == '' then
+      local buf = vim.api.nvim_win_get_buf(win)
+      if vim.bo[buf].filetype == 'neo-tree' then
+        local pos = vim.api.nvim_win_get_position(win)
+        if pos[2] == 0 then return vim.api.nvim_win_get_width(win) end
+      end
+    end
+  end
+  return 0
+end
+
+local function editor_window()
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    if vim.api.nvim_win_get_config(win).relative == '' then
+      local buf = vim.api.nvim_win_get_buf(win)
+      if vim.bo[buf].buftype == '' and vim.bo[buf].filetype ~= 'neo-tree'
+        and vim.api.nvim_buf_get_name(buf) ~= '' then
+        return win
+      end
+    end
+  end
+end
+
+function M.tabline()
+  local out = {}
+  local offset = explorer_tab_offset()
+  if offset > 0 then
+    local label = ' Explorer'
+    local pad = math.max(0, offset - vim.fn.strdisplaywidth(label))
+    out[#out + 1] = '%#GoIdeTabExplorer#' .. label .. string.rep(' ', pad)
+  end
+
+  local current = M.last_editor_buf
+  if not current or not vim.api.nvim_buf_is_valid(current) then
+    local buf = vim.api.nvim_get_current_buf()
+    if vim.bo[buf].buftype == '' and vim.api.nvim_buf_get_name(buf) ~= '' then current = buf end
+  end
+
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.bo[buf].buflisted and vim.bo[buf].buftype == '' then
+      local path = vim.api.nvim_buf_get_name(buf)
+      if path ~= '' then
+        local name = vim.fn.fnamemodify(path, ':t')
+        local icon = ''
+        if s.icons then
+          local ok, devicons = pcall(require, 'nvim-web-devicons')
+          if ok then icon = devicons.get_icon(name, vim.bo[buf].filetype, { default = true }) or '' end
+        end
+        local label = (icon ~= '' and (icon .. '  ') or '') .. name
+        if vim.bo[buf].modified then label = label .. '  ●' end
+        local click = '%' .. buf .. '@v:lua.GoIdeTabClick@'
+        if buf == current then
+          out[#out + 1] = click
+            .. '%#GoIdeTabCap#'
+            .. '%#GoIdeTabActive# ' .. escape_tabline(label) .. ' '
+            .. '%#GoIdeTabCap#%T'
+            .. '%#GoIdeTabFill# '
+        else
+          out[#out + 1] = click
+            .. '%#GoIdeTabInactive#  ' .. escape_tabline(label) .. '  %T'
+        end
+      end
+    end
+  end
+  out[#out + 1] = '%#GoIdeTabFill#'
+  return table.concat(out)
+end
+
+function M.tab_click(buf, _, button)
+  vim.schedule(function()
+    if not vim.api.nvim_buf_is_valid(buf) then return end
+    if button == 'm' then M.close_buffer(buf); return end
+    if button ~= 'l' then return end
+    local win = editor_window()
+    if win then
+      vim.api.nvim_set_current_win(win)
+      vim.api.nvim_win_set_buf(win, buf)
+    else
+      vim.api.nvim_set_current_buf(buf)
+    end
+    M.last_editor_buf = buf
+  end)
+end
 function M.close_buffer(buf)
   buf = buf or vim.api.nvim_get_current_buf()
   if not vim.api.nvim_buf_is_valid(buf) then return end
@@ -120,6 +210,9 @@ function M.toggle_minimap()
 end
 function M.setup()
   _G.GoIdeBreadcrumb = M.breadcrumb
+  _G.GoIdeTabline = M.tabline
+  _G.GoIdeTabClick = M.tab_click
+  vim.o.tabline = '%!v:lua.GoIdeTabline()'
   _G.GoIdePanelClick = function(index)
     vim.schedule(function() M.open_panel(({ 'problems', 'output', 'debug', 'terminal' })[index]) end)
   end
@@ -129,6 +222,7 @@ function M.setup()
       if vim.api.nvim_win_get_config(win).relative ~= '' then return end
       if vim.bo.buftype == '' then
         M.panels[win] = nil
+        if vim.api.nvim_buf_get_name(0) ~= '' then M.last_editor_buf = vim.api.nvim_get_current_buf() end
         vim.wo.winbar = editor_winbar()
       elseif vim.bo.filetype == 'goideoutput' then M.set_panel(vim.api.nvim_get_current_win(), 'output')
       elseif vim.bo.filetype == 'Trouble' then M.set_panel(vim.api.nvim_get_current_win(), 'problems')
@@ -139,6 +233,9 @@ function M.setup()
     end,
   })
   M.refresh_breadcrumbs()
+  vim.api.nvim_create_autocmd({ 'BufAdd', 'BufDelete', 'BufModifiedSet', 'BufEnter' }, {
+    callback = function() vim.schedule(function() pcall(vim.cmd, 'redrawtabline') end) end,
+  })
   vim.api.nvim_create_autocmd('DiagnosticChanged', {
     callback = function()
       for win, kind in pairs(M.panels) do

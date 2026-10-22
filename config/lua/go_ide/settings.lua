@@ -8,7 +8,7 @@ return {
   editor_top_padding = true,   -- one blank row above code when breadcrumbs are hidden
   always_show_tabs = true,      -- keep the file-tab strip visible like a GUI editor
   minimap = true,               -- enabled automatically on sufficiently wide editor windows
-  minimap_min_columns = 160,
+  minimap_min_columns = 140,
   minimap_width = 10,
   format_on_save = true,
   inlay_hints = false,          -- keep the source uncluttered; toggle with Space c i

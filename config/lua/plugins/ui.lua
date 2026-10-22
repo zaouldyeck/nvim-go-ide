@@ -1,32 +1,5 @@
 local s = require('go_ide.settings')
 local c = s.colors
-local chrome = c.chrome or c.tab
-local active_tab = c.active_tab or c.selection
-local tab_highlights = {
-  fill = { bg = chrome },
-  background = { fg = c.muted, bg = chrome, italic = false },
-  buffer_visible = { fg = c.fg_dim, bg = chrome, italic = false },
-  buffer_selected = { fg = c.fg, bg = active_tab, bold = true, italic = false },
-  separator = { fg = chrome, bg = chrome },
-  separator_visible = { fg = chrome, bg = chrome },
-  separator_selected = { fg = active_tab, bg = chrome },
-  offset_separator = { fg = c.panel, bg = c.panel },
-}
--- Inactive tabs blend into the bar. The selected tab gets a darker body and
--- Nerd Font semicircle separators, which gives it a soft rounded-card shape.
-for _, suffix in ipairs({ '', '_visible', '_selected' }) do
-  local bg = suffix == '_selected' and active_tab or chrome
-  for name, color in pairs({
-    close_button = c.muted, modified = c.yellow, duplicate = c.muted,
-    numbers = c.fg_dim, diagnostic = c.fg_dim,
-    error = c.red, error_diagnostic = c.red,
-    warning = c.yellow, warning_diagnostic = c.yellow,
-    info = c.blue, info_diagnostic = c.blue,
-    hint = c.teal, hint_diagnostic = c.teal,
-  }) do
-    tab_highlights[name .. suffix] = { fg = color, bg = bg, italic = false }
-  end
-end
 local plain_icons = {}
 for _, kind in ipairs({ 'File', 'Module', 'Namespace', 'Package', 'Class', 'Method', 'Property', 'Field', 'Constructor', 'Enum', 'Interface', 'Function', 'Variable', 'Constant', 'String', 'Number', 'Boolean', 'Array', 'Object', 'Key', 'Null', 'EnumMember', 'Struct', 'Event', 'Operator', 'TypeParameter' }) do
   plain_icons[kind] = ''
@@ -103,29 +76,6 @@ return {
           show_hidden_count = true,
         },
       },
-    },
-  },
-  {
-    'akinsho/bufferline.nvim',
-    dependencies = { 'nvim-tree/nvim-web-devicons' },
-    opts = {
-      options = {
-        mode = 'buffers', numbers = 'none',
-        separator_style = s.icons and { '', '' } or 'thin',
-        indicator = { style = 'none' },
-        diagnostics = 'nvim_lsp', diagnostics_update_in_insert = false,
-        diagnostics_indicator = function(count) return ' ' .. count end,
-        modified_icon = '●', buffer_close_icon = '×', close_icon = '×',
-        show_buffer_icons = s.icons, show_buffer_close_icons = false, show_close_icon = false,
-        always_show_bufferline = s.always_show_tabs, enforce_regular_tabs = false,
-        max_name_length = 24, tab_size = 18, truncate_names = true,
-        -- Let the sidebar background provide separation; no vertical divider.
-        offsets = { { filetype = 'neo-tree', text = 'Explorer', text_align = 'left', padding = 0, separator = false } },
-        close_command = function(buf) require('go_ide.ui').close_buffer(buf) end,
-        right_mouse_command = function(buf) require('go_ide.ui').close_buffer(buf) end,
-        custom_filter = function(buf) return vim.bo[buf].buftype == '' end,
-      },
-      highlights = tab_highlights,
     },
   },
   { 'SmiteshP/nvim-navic', opts = { highlight = true, icons = not s.icons and plain_icons or nil, separator = '  ›  ', depth_limit = 5, lsp = { auto_attach = true, preference = { 'gopls' } } } },

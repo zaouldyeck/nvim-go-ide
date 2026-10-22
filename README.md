@@ -36,7 +36,7 @@ cd ~/code/golang/cli
 
 | Area | Features |
 | --- | --- |
-| Appearance | Screenshot-sampled navy palette, italic purple keywords, cyan Go gophers, relative line numbers, tab guides, rounded-card file tabs, breadcrumb header, wide-screen minimap, and the original Horizon per-pane status bars |
+| Appearance | Screenshot-sampled navy palette, italic purple keywords, cyan Go gophers, relative line numbers, tab guides, native rounded-card file tabs, breadcrumb header, wide-screen minimap, and the original Horizon per-pane status bars |
 | Navigation | Neo-tree Explorer with a blue folder icon, bold directory header and hidden-file summary; fuzzy file/buffer search, project and open-buffer text search, search history, outline, document/workspace symbols, split windows, definition/reference/implementation jumps |
 | Go editing | gopls, completion, custom LuaSnip templates with return-type choices and Ctrl+L/Ctrl+H navigation, rounded bordered signature help and rich hover docs, rename, dropdown code actions, import management, format on save, explicit module tidy, optional inlay hints and code lenses |
 | Execution | Run the current package in a terminal with stdin support; run nearest/file/package/module tests; navigable failure locations; coverage markers |
@@ -70,9 +70,10 @@ first source line never presses against the tab strip. Set
 breadcrumbs are disabled.
 
 The main editor deliberately stays unframed. Neo-tree uses a slightly darker
-panel background with no visible vertical divider, inactive file tabs blend into
-the top chrome, and the active file uses Nerd Font semicircle caps to form a
-compact rounded card. Breadcrumbs sit on their own dark header strip below the
+panel background with no visible vertical divider. A native Neovim tabline hides
+unnamed scratch buffers, lets inactive files blend into the top chrome, and uses
+Nerd Font semicircle caps as real left/right edges around the active file.
+Breadcrumbs sit on their own dark header strip below the
 tabs, giving the editor the same breathing room without drawing lines through
 the code area. When breadcrumbs are hidden, their row becomes the blank spacer
 instead.
@@ -81,7 +82,9 @@ The rounded four-sided border used by documentation, signature help and other
 floating cards remains reserved for floating windows; regular editing splits
 cannot use Neovim's floating-window border API.
 
-The Explorer is 34 columns wide. Its header keeps the beginning of the directory
+The Explorer is 34 columns wide. The minimap threshold is 140 terminal columns
+so it is visible on the wide layout used in the screenshots. Its header keeps
+the beginning of the directory
 path, replacing your home directory with `~` when applicable. Press **H** inside
 Explorer to show or hide filtered files, and **?** for its local key reference.
 The original per-pane Horizon status bars are preserved, including the coloured
