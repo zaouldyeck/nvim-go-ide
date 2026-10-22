@@ -5,6 +5,14 @@ navy palette, italic syntax, relative numbers, and status line of your current
 Neovim screenshot with the Go IDE workflow built for this package. Start it
 with `nvim-go`.
 
+## Preview
+
+![Animated preview of the Neovim Go IDE showing the Explorer, Go editing view, status line and rounded documentation card.](docs/assets/nvim-go-showcase.gif)
+
+The animation uses real captures from the configured editor. Font rasterization and
+terminal chrome can differ slightly between Linux and macOS, but the Neovim
+layout, palette and UI components are the same.
+
 ## Install on Fedora Asahi Remix
 
 Clone the repository, then install from its root directory:
