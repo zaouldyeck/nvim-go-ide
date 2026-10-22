@@ -78,7 +78,7 @@ The rounded four-sided border used by documentation, signature help and other
 floating cards remains reserved for floating windows; regular editing splits
 cannot use Neovim's floating-window border API.
 
-The Explorer is 40 columns wide. Its header keeps the beginning of the directory
+The Explorer is 34 columns wide. Its header keeps the beginning of the directory
 path, replacing your home directory with `~` when applicable. Press **H** inside
 Explorer to show or hide filtered files, and **?** for its local key reference.
 The active editor's status line uses Horizon's **`#e95678`** in Normal mode and
