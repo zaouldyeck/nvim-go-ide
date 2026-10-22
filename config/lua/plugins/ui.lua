@@ -2,38 +2,6 @@ local s = require('go_ide.settings')
 local c = s.colors
 local chrome = c.chrome or c.tab
 local active_tab = c.active_tab or c.selection
-local statusline_theme = {
-  normal = {
-    a = { fg = c.panel, bg = '#e95678', gui = 'bold' },
-    b = { fg = c.fg_dim, bg = c.panel },
-    c = { fg = c.fg_dim, bg = c.panel },
-  },
-  insert = {
-    a = { fg = c.panel, bg = c.accent, gui = 'bold' },
-    b = { fg = c.fg_dim, bg = c.panel },
-    c = { fg = c.fg_dim, bg = c.panel },
-  },
-  visual = {
-    a = { fg = c.panel, bg = c.orange, gui = 'bold' },
-    b = { fg = c.fg_dim, bg = c.panel },
-    c = { fg = c.fg_dim, bg = c.panel },
-  },
-  replace = {
-    a = { fg = c.panel, bg = c.red, gui = 'bold' },
-    b = { fg = c.fg_dim, bg = c.panel },
-    c = { fg = c.fg_dim, bg = c.panel },
-  },
-  command = {
-    a = { fg = c.panel, bg = c.green, gui = 'bold' },
-    b = { fg = c.fg_dim, bg = c.panel },
-    c = { fg = c.fg_dim, bg = c.panel },
-  },
-  inactive = {
-    a = { fg = c.muted, bg = c.panel },
-    b = { fg = c.muted, bg = c.panel },
-    c = { fg = c.muted, bg = c.panel },
-  },
-}
 local tab_highlights = {
   fill = { bg = chrome },
   background = { fg = c.muted, bg = chrome, italic = false },
@@ -42,7 +10,7 @@ local tab_highlights = {
   separator = { fg = chrome, bg = chrome },
   separator_visible = { fg = chrome, bg = chrome },
   separator_selected = { fg = active_tab, bg = chrome },
-  offset_separator = { fg = c.border, bg = c.panel },
+  offset_separator = { fg = c.panel, bg = c.panel },
 }
 -- Inactive tabs blend into the bar. The selected tab gets a darker body and
 -- Nerd Font semicircle separators, which gives it a soft rounded-card shape.
@@ -151,9 +119,8 @@ return {
         show_buffer_icons = s.icons, show_buffer_close_icons = false, show_close_icon = false,
         always_show_bufferline = s.always_show_tabs, enforce_regular_tabs = false,
         max_name_length = 24, tab_size = 18, truncate_names = true,
-        -- Keep the Explorer edge aligned with the real split while using the
-        -- low-contrast border colour instead of framing the editor.
-        offsets = { { filetype = 'neo-tree', text = 'Explorer', text_align = 'left', padding = 0, separator = '│' } },
+        -- Let the sidebar background provide separation; no vertical divider.
+        offsets = { { filetype = 'neo-tree', text = 'Explorer', text_align = 'left', padding = 0, separator = false } },
         close_command = function(buf) require('go_ide.ui').close_buffer(buf) end,
         right_mouse_command = function(buf) require('go_ide.ui').close_buffer(buf) end,
         custom_filter = function(buf) return vim.bo[buf].buftype == '' end,
@@ -167,23 +134,22 @@ return {
     dependencies = { 'nvim-tree/nvim-web-devicons', 'SmiteshP/nvim-navic' },
     opts = {
       options = {
-        -- Keep one continuous dark status bar; only the mode badge changes colour.
-        theme = statusline_theme,
+        theme = s.statusline_theme,
         icons_enabled = s.icons,
-        component_separators = { left = ' ', right = ' ' },
-        section_separators = { left = '', right = '' },
-        globalstatus = true,
+        component_separators = s.icons and { left = '', right = '' } or { left = '|', right = '|' },
+        section_separators = s.icons and { left = '', right = '' } or { left = '', right = '' },
+        globalstatus = false,
       },
       sections = {
         lualine_a = { 'mode' },
         lualine_b = { 'branch', 'diff', { 'diagnostics', sources = { 'nvim_diagnostic' } } },
-        lualine_c = {},
-        lualine_x = { 'filetype', 'encoding', 'fileformat' },
+        lualine_c = { { 'filename', path = 1 } },
+        lualine_x = { 'encoding', 'fileformat', 'filetype' },
         lualine_y = { 'progress' }, lualine_z = { 'location' },
       },
       inactive_sections = {
-        lualine_a = {}, lualine_b = {}, lualine_c = {},
-        lualine_x = {}, lualine_y = {}, lualine_z = {},
+        lualine_a = {}, lualine_b = {}, lualine_c = { 'filename' },
+        lualine_x = { 'location' }, lualine_y = {}, lualine_z = {},
       },
       extensions = { 'quickfix', 'aerial', 'nvim-dap-ui' },
     },

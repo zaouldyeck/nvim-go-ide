@@ -87,7 +87,7 @@ function M.setup()
   -- Tree-sitter owns keyword styling, including the screenshot's italic forms.
   vim.api.nvim_set_hl(0, '@lsp.type.keyword', {})
   h('NeoTreeNormal', c.fg_dim, c.panel); h('NeoTreeNormalNC', c.fg_dim, c.panel)
-  h('NeoTreeEndOfBuffer', c.bg, c.panel); h('NeoTreeWinSeparator', c.border, c.panel)
+  h('NeoTreeEndOfBuffer', c.bg, c.panel); h('NeoTreeWinSeparator', c.panel, c.panel)
   h('NeoTreeCursorLine', nil, active_tab)
   h('NeoTreeRootName', c.fg_dim, c.panel, { bold = true })
   h('NeoTreeDirectoryName', c.fg_dim); h('NeoTreeDirectoryIcon', c.blue)

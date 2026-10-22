@@ -3,6 +3,7 @@ return {
   icons = true,                 -- false if you prefer plain text over Nerd Font icons
   auto_explorer = true,
   explorer_width = 34,
+  statusline_theme = 'horizon', -- keep the original per-pane Horizon status bars
   breadcrumbs = true,          -- VS Code-like file/symbol context below the tabs; toggle with Space u b
   editor_top_padding = true,   -- one blank row above code when breadcrumbs are hidden
   always_show_tabs = true,      -- keep the file-tab strip visible like a GUI editor
