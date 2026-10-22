@@ -1,19 +1,19 @@
 local s = require('go_ide.settings')
 local c = s.colors
-local frame = s.editor_borders ~= false and (c.frame or c.inline_code or c.gutter) or c.border
 local tab_highlights = {
-  fill = { bg = c.tab }, background = { fg = c.fg_dim, bg = c.bg },
-  buffer_selected = { fg = c.blue, bg = c.selection, bold = true, italic = false },
-  buffer_visible = { fg = c.fg_dim, bg = c.bg, italic = false },
-  separator = { fg = s.icons and c.tab or frame, bg = c.bg },
-  separator_visible = { fg = s.icons and c.tab or frame, bg = c.bg },
-  separator_selected = { fg = s.icons and c.tab or frame, bg = c.selection },
-  offset_separator = { fg = frame, bg = c.panel },
+  fill = { bg = c.tab },
+  background = { fg = c.muted, bg = c.tab, italic = false },
+  buffer_visible = { fg = c.fg_dim, bg = c.tab, italic = false },
+  buffer_selected = { fg = c.fg, bg = c.selection, bold = true, italic = false },
+  separator = { fg = c.tab, bg = c.tab },
+  separator_visible = { fg = c.tab, bg = c.tab },
+  separator_selected = { fg = c.selection, bg = c.tab },
+  offset_separator = { fg = c.border, bg = c.panel },
 }
--- Keep every part of a tab on the same background, including diagnostics and
--- duplicate-path labels, so the selected tab reads as one continuous shape.
+-- Inactive tabs blend into the bar. The selected tab gets a darker body and
+-- Nerd Font semicircle separators, which gives it a soft rounded-card shape.
 for _, suffix in ipairs({ '', '_visible', '_selected' }) do
-  local bg = suffix == '_selected' and c.selection or c.bg
+  local bg = suffix == '_selected' and c.selection or c.tab
   for name, color in pairs({
     close_button = c.muted, modified = c.yellow, duplicate = c.muted,
     numbers = c.fg_dim, diagnostic = c.fg_dim,
@@ -109,15 +109,15 @@ return {
     opts = {
       options = {
         mode = 'buffers', numbers = 'none',
-        separator_style = s.icons and 'slant' or { '│', '│' },
+        separator_style = s.icons and { '', '' } or 'thin',
         indicator = { style = 'none' },
         diagnostics = 'nvim_lsp', diagnostics_update_in_insert = false,
         diagnostics_indicator = function(count) return ' ' .. count end,
         modified_icon = '●', buffer_close_icon = '×', close_icon = '×',
-        show_buffer_icons = s.icons, show_close_icon = false,
+        show_buffer_icons = s.icons, show_buffer_close_icons = false, show_close_icon = false,
         always_show_bufferline = s.always_show_tabs, enforce_regular_tabs = false,
-        -- Offset padding extends the entire sidebar: zero keeps this divider
-        -- in the same screen column as the actual Explorer split below it.
+        -- Keep the Explorer edge aligned with the real split while using the
+        -- low-contrast border colour instead of framing the editor.
         offsets = { { filetype = 'neo-tree', text = 'Explorer', text_align = 'left', padding = 0, separator = '│' } },
         close_command = function(buf) require('go_ide.ui').close_buffer(buf) end,
         right_mouse_command = function(buf) require('go_ide.ui').close_buffer(buf) end,
