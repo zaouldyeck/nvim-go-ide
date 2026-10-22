@@ -1,19 +1,21 @@
 local s = require('go_ide.settings')
 local c = s.colors
+local chrome = c.chrome or c.tab
+local active_tab = c.active_tab or c.selection
 local tab_highlights = {
-  fill = { bg = c.tab },
-  background = { fg = c.muted, bg = c.tab, italic = false },
-  buffer_visible = { fg = c.fg_dim, bg = c.tab, italic = false },
-  buffer_selected = { fg = c.fg, bg = c.selection, bold = true, italic = false },
-  separator = { fg = c.tab, bg = c.tab },
-  separator_visible = { fg = c.tab, bg = c.tab },
-  separator_selected = { fg = c.selection, bg = c.tab },
+  fill = { bg = chrome },
+  background = { fg = c.muted, bg = chrome, italic = false },
+  buffer_visible = { fg = c.fg_dim, bg = chrome, italic = false },
+  buffer_selected = { fg = c.fg, bg = active_tab, bold = true, italic = false },
+  separator = { fg = chrome, bg = chrome },
+  separator_visible = { fg = chrome, bg = chrome },
+  separator_selected = { fg = active_tab, bg = chrome },
   offset_separator = { fg = c.border, bg = c.panel },
 }
 -- Inactive tabs blend into the bar. The selected tab gets a darker body and
 -- Nerd Font semicircle separators, which gives it a soft rounded-card shape.
 for _, suffix in ipairs({ '', '_visible', '_selected' }) do
-  local bg = suffix == '_selected' and c.selection or c.tab
+  local bg = suffix == '_selected' and active_tab or chrome
   for name, color in pairs({
     close_button = c.muted, modified = c.yellow, duplicate = c.muted,
     numbers = c.fg_dim, diagnostic = c.fg_dim,
@@ -116,6 +118,7 @@ return {
         modified_icon = '●', buffer_close_icon = '×', close_icon = '×',
         show_buffer_icons = s.icons, show_buffer_close_icons = false, show_close_icon = false,
         always_show_bufferline = s.always_show_tabs, enforce_regular_tabs = false,
+        max_name_length = 24, tab_size = 18, truncate_names = true,
         -- Keep the Explorer edge aligned with the real split while using the
         -- low-contrast border colour instead of framing the editor.
         offsets = { { filetype = 'neo-tree', text = 'Explorer', text_align = 'left', padding = 0, separator = '│' } },
@@ -136,21 +139,20 @@ return {
         -- Lualine applies each mode's accent to both a (mode) and z (location).
         theme = s.statusline_theme,
         icons_enabled = s.icons,
-        component_separators = s.icons and { left = '', right = '' } or { left = '|', right = '|' },
-        section_separators = s.icons and { left = '', right = '' } or { left = '', right = '' },
-        globalstatus = false,
+        component_separators = { left = ' ', right = ' ' },
+        section_separators = { left = '', right = '' },
+        globalstatus = true,
       },
       sections = {
         lualine_a = { 'mode' },
         lualine_b = { 'branch', 'diff', { 'diagnostics', sources = { 'nvim_diagnostic' } } },
-        lualine_c = { { 'filename', path = 1 } },
-        lualine_x = { 'encoding', 'fileformat', 'filetype' },
+        lualine_c = {},
+        lualine_x = { 'filetype', 'encoding', 'fileformat' },
         lualine_y = { 'progress' }, lualine_z = { 'location' },
       },
-      -- Keep the native buffer name and location in the subdued inactive tree bar.
       inactive_sections = {
-        lualine_a = {}, lualine_b = {}, lualine_c = { 'filename' },
-        lualine_x = { 'location' }, lualine_y = {}, lualine_z = {},
+        lualine_a = {}, lualine_b = {}, lualine_c = {},
+        lualine_x = {}, lualine_y = {}, lualine_z = {},
       },
       extensions = { 'quickfix', 'aerial', 'nvim-dap-ui' },
     },
@@ -161,6 +163,7 @@ return {
     opts = {
       defaults = {
         prompt_prefix = '  > ', selection_caret = '  ',
+        borderchars = { '─', '│', '─', '│', '╭', '╮', '╯', '╰' },
         path_display = { 'truncate' }, sorting_strategy = 'ascending',
         layout_config = { prompt_position = 'top', width = 0.86, height = 0.8 },
         file_ignore_patterns = { '^.git/' },
