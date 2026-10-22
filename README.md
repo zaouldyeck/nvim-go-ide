@@ -62,6 +62,11 @@ breadcrumbs, **Space m m** for the minimap, and **Space u n** to switch line
 number styles. Search, the symbol outline, tests, and debugging remain available
 in this layout.
 
+One blank screen row separates file tabs from the code. The gap also appears in
+new files and splits. Enabling breadcrumbs uses that same row; hiding them
+restores the blank gap. To remove it, set `editor_top_padding = false` in
+`:GoIdeSettings` and restart the editor.
+
 The Explorer is 40 columns wide. Its header keeps the beginning of the directory
 path, replacing your home directory with `~` when applicable. Press **H** inside
 Explorer to show or hide filtered files, and **?** for its local key reference.

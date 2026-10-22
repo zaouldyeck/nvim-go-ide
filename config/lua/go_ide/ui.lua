@@ -1,5 +1,11 @@
 local s = require('go_ide.settings')
 local M = { panels = {}, minimap_enabled = s.minimap, breadcrumbs_enabled = s.breadcrumbs ~= false }
+local breadcrumb_winbar = '%{%v:lua.GoIdeBreadcrumb()%}'
+local function editor_winbar()
+  if M.breadcrumbs_enabled then return breadcrumb_winbar end
+  -- A non-empty winbar reserves a screen row without adding text to the file.
+  return s.editor_top_padding ~= false and ' ' or ''
+end
 function M.close_buffer(buf)
   buf = buf or vim.api.nvim_get_current_buf()
   if not vim.api.nvim_buf_is_valid(buf) then return end
@@ -41,9 +47,9 @@ end
 function M.refresh_breadcrumbs()
   for _, win in ipairs(vim.api.nvim_list_wins()) do
     local buf = vim.api.nvim_win_get_buf(win)
-    if vim.bo[buf].buftype == '' and vim.bo[buf].filetype ~= ''
+    if vim.bo[buf].buftype == ''
       and vim.api.nvim_win_get_config(win).relative == '' then
-      vim.wo[win].winbar = M.breadcrumbs_enabled and '%{%v:lua.GoIdeBreadcrumb()%}' or ''
+      vim.wo[win].winbar = editor_winbar()
     end
   end
 end
@@ -117,16 +123,22 @@ function M.setup()
   _G.GoIdePanelClick = function(index)
     vim.schedule(function() M.open_panel(({ 'problems', 'output', 'debug', 'terminal' })[index]) end)
   end
-  vim.api.nvim_create_autocmd({ 'BufWinEnter', 'FileType' }, {
+  vim.api.nvim_create_autocmd({ 'BufWinEnter', 'WinEnter', 'FileType' }, {
     callback = function()
-      if vim.bo.buftype == '' and vim.bo.filetype ~= '' then
-        M.panels[vim.api.nvim_get_current_win()] = nil
-        vim.wo.winbar = M.breadcrumbs_enabled and '%{%v:lua.GoIdeBreadcrumb()%}' or ''
+      local win = vim.api.nvim_get_current_win()
+      if vim.api.nvim_win_get_config(win).relative ~= '' then return end
+      if vim.bo.buftype == '' then
+        M.panels[win] = nil
+        vim.wo.winbar = editor_winbar()
       elseif vim.bo.filetype == 'goideoutput' then M.set_panel(vim.api.nvim_get_current_win(), 'output')
       elseif vim.bo.filetype == 'Trouble' then M.set_panel(vim.api.nvim_get_current_win(), 'problems')
+      elseif vim.wo.winbar == ' ' or vim.wo.winbar == breadcrumb_winbar then
+        -- A split may inherit our header before becoming an Explorer/help pane.
+        vim.wo.winbar = ''
       end
     end,
   })
+  M.refresh_breadcrumbs()
   vim.api.nvim_create_autocmd('DiagnosticChanged', {
     callback = function()
       for win, kind in pairs(M.panels) do

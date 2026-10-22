@@ -5,6 +5,7 @@ return {
   explorer_width = 40,
   statusline_theme = 'horizon', -- your rose Normal / cyan Insert bar, on both ends
   breadcrumbs = false,         -- toggle with Space u b when you want symbol context
+  editor_top_padding = true,   -- one blank row above code when breadcrumbs are hidden
   always_show_tabs = false,     -- file tabs appear automatically with multiple files
   minimap = false,              -- toggle with Space m m; automatically sized for wide editors
   minimap_min_columns = 160,
