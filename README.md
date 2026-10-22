@@ -57,26 +57,26 @@ the available actions. For example, **Space f f** finds a file and **Space t t**
 runs the nearest test.
 
 The default view stays compact: file tabs appear when more than one file is
-open, while breadcrumbs and the minimap start hidden. Use **Space u b** for
-breadcrumbs, **Space m m** for the minimap, and **Space u n** to switch line
-number styles. Search, the symbol outline, tests, and debugging remain available
-in this layout.
+open, breadcrumbs stay visible below them for file/symbol context, and the
+minimap starts hidden. Use **Space u b** to hide/show breadcrumbs, **Space m m**
+for the minimap, and **Space u n** to switch line number styles. Search, the
+symbol outline, tests, and debugging remain available in this layout.
 
 One blank screen row separates file tabs from the code. The gap also appears in
 new files and splits. Enabling breadcrumbs uses that same row; hiding them
 restores the blank gap. To remove it, set `editor_top_padding = false` in
 `:GoIdeSettings` and restart the editor.
 
-With breadcrumbs hidden, the code pane has a subtle blue-grey rule below its
-spacer row and matching split dividers. The Explorer divider lines up with the
-tab strip, and file tabs have slanted sides with a blue active label.
-Set `editor_borders = false` to hide the header rule and soften the dividers
-while keeping the spacing. The plain-icon
-fallback uses simple vertical tab separators. These are native split edges;
-complete rounded four-sided borders are reserved for floating documentation
-and other popup windows.
+The main editor deliberately stays unframed. Neo-tree uses a slightly darker
+panel background with a low-contrast divider, inactive file tabs blend into the
+tab bar, and the active file uses Nerd Font semicircle caps to form a compact
+rounded card. Breadcrumbs occupy the row below the tabs, giving the editor the
+same breathing room without drawing lines through the code area. When
+breadcrumbs are hidden, that row becomes the blank spacer instead.
 
-![Editor pane rule and file tab styling](docs/nvim-go-pane-borders.png)
+The rounded four-sided border used by documentation, signature help and other
+floating cards remains reserved for floating windows; regular editing splits
+cannot use Neovim's floating-window border API.
 
 The Explorer is 40 columns wide. Its header keeps the beginning of the directory
 path, replacing your home directory with `~` when applicable. Press **H** inside
