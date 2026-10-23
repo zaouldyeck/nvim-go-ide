@@ -38,6 +38,7 @@ Press `Esc` before a Normal-mode shortcut. **`Space` is the leader key**: press 
 | Command palette | `Space f c` |
 | Symbols in current document | `Space f s` |
 | Workspace symbols | `Space f S` |
+| Find implementations in picker | `Space f i` |
 | Fuzzy search current buffer | `Space /` |
 | Search current word | `Space s w` |
 | Resume last picker | `Space s r` |
@@ -52,8 +53,12 @@ Press `Esc` before a Normal-mode shortcut. **`Space` is the leader key**: press 
 | Toggle Explorer | `Space e` |
 | Reveal current file in Explorer | `Space E` |
 | Toggle symbol outline | `Space o` |
-| Toggle minimap (hidden at startup) | `Space m m` |
-| Toggle symbol breadcrumbs (hidden at startup) | `Space u b` or `:GoIdeBreadcrumbs` |
+| Toggle minimap | `Space m m` |
+| Toggle symbol breadcrumbs | `Space u b` or `:GoIdeBreadcrumbs` |
+| Toggle sticky code context | `Space u c` or `:GoIdeContext` |
+| Toggle Focus Mode | `Space u f` or `:GoIdeFocus` |
+| Toggle sticky code context | `Space u c` or `:GoIdeContext` |
+| Toggle Focus Mode | `Space u f` or `:GoIdeFocus` |
 | Next / previous buffer | `Tab` / `Shift+Tab` in Normal mode |
 | Close current buffer | `Space b d` |
 | Move left / down / up / right between windows | `Ctrl+H` / `Ctrl+J` / `Ctrl+K` / `Ctrl+L` |
@@ -80,7 +85,7 @@ These keys apply while the **Neo-tree Explorer** is focused:
 | Open in vertical / horizontal split | `s` / `S` |
 | Close Explorer | `q` or `Ctrl+B` |
 
-Explorer starts 40 columns wide with a blue open-folder icon and bold italic home-relative root path. Dotfiles and ignored entries start hidden; the native `(N hidden items)` row reports the count. `H` toggles filtered entries without changing your files.
+Explorer starts 34 columns wide with a blue open-folder icon and bold home-relative root path. Dotfiles and ignored entries start hidden; the native `(N hidden items)` row reports the count. `H` toggles filtered entries without changing your files.
 
 In a file/search picker, type to filter, use `Ctrl+J` / `Ctrl+K` or the arrow keys to select an item, `Enter` to open it, and `Esc` to close the picker. Telescope's default `Ctrl+V` / `Ctrl+X` open a selected file in a vertical/horizontal split, `Ctrl+T` opens it in a tab, and `Ctrl+U` / `Ctrl+D` scroll the preview.
 
@@ -94,6 +99,11 @@ The file strip appears automatically when several files are open. Set `always_sh
 | Find references | `gr` |
 | Find implementations | `gi` |
 | Go to type definition | `gy` |
+| Flash jump to visible target | `s` |
+| Flash syntax-tree selection | `S` |
+| Jump to sticky context | `[c` |
+| Next / previous Go function or method | `]m` / `[m` |
+| Next / previous Go test | `]t` / `[t` |
 | Return after a jump | `Ctrl+O` or `Space j b` |
 | Go forward again | `Space j f` |
 | Hover documentation / focus its card | `K` / `K` again |
@@ -169,13 +179,14 @@ Edit `config/lua/custom/snippets.lua` in the repository or `~/.config/nvim-go/lu
 | Run tests declared in current file | `Space t f` | `:GoTest file` |
 | Run current package tests | `Space t p` | `:GoTest package` |
 | Run current module tests | `Space t a` | `:GoTest all` |
+| Rerun exact previous test command | `Space t r` | `:GoTestLast` |
 | Show/hide Go output | `Space t o` | `:GoOutput` |
 | Run module coverage | `Space t c` | `:GoCoverage` |
 | Clear coverage marks | `Space t C` | `:GoCoverageClear` |
 | Stop Go run/test/tidy task | `Space t s` | `:GoStop` |
 | Run current package | `Space r r` | `:GoRun` |
 | Run package with prompted arguments | `Space r a` | `:GoRun arg1 arg2` |
-| Open failure locations | — | `:copen` |
+| Open styled failure locations | `Space x q` | `:copen` / Quicker |
 | Next / previous failure | — | `:cnext` / `:cprevious` |
 
 `all` is the active module, even inside a `go.work` workspace. The file scope compiles the entire package while selecting that file's test functions. Run/test/debug actions save modified named Go buffers in the active module first.

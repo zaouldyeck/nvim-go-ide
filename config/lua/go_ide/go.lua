@@ -571,7 +571,8 @@ function M.setup()
       vim.api.nvim_buf_clear_namespace(event.buf, coverage_ns, 0, -1)
       for _, buf in ipairs(vim.api.nvim_list_bufs()) do
         local other = vim.api.nvim_buf_get_name(buf)
-        if vim.api.nvim_buf_is_valid(buf) and vim.fs.dirname(other) == vim.fs.dirname(file) then
+        if other ~= "" and vim.api.nvim_buf_is_valid(buf)
+          and vim.fs.dirname(other) == vim.fs.dirname(file) then
           vim.api.nvim_buf_clear_namespace(buf, test_ns, 0, -1)
         end
       end
