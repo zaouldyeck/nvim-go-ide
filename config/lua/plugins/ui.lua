@@ -7,6 +7,7 @@ end
 return {
   {
     'nvim-tree/nvim-web-devicons',
+    lazy = true,
     opts = {
       color_icons = true,
       override_by_extension = { go = { icon = '', color = c.go_icon, name = 'Go' } },
@@ -19,6 +20,7 @@ return {
   },
   {
     'nvim-neo-tree/neo-tree.nvim', branch = 'v3.x',
+    lazy = true,
     dependencies = { 'nvim-lua/plenary.nvim', 'MunifTanjim/nui.nvim', 'nvim-tree/nvim-web-devicons' },
     init = function()
       -- Netrw is disabled for this profile. Neo-tree clears its FileExplorer
@@ -78,9 +80,10 @@ return {
       },
     },
   },
-  { 'SmiteshP/nvim-navic', opts = { highlight = true, icons = not s.icons and plain_icons or nil, separator = '  ›  ', depth_limit = 5, lsp = { auto_attach = true, preference = { 'gopls' } } } },
+  { 'SmiteshP/nvim-navic', lazy = false, opts = { highlight = true, icons = not s.icons and plain_icons or nil, separator = '  ›  ', depth_limit = 5, lsp = { auto_attach = true, preference = { 'gopls' } } } },
   {
     'nvim-treesitter/nvim-treesitter-context',
+    event = { 'BufReadPost', 'BufNewFile' },
     dependencies = { 'nvim-treesitter/nvim-treesitter' },
     opts = {
       enable = s.sticky_context ~= false,
@@ -100,6 +103,7 @@ return {
   },
   {
     'j-hui/fidget.nvim',
+    lazy = false,
     config = function()
       local notification = require('fidget.notification')
       require('fidget').setup({
@@ -141,6 +145,7 @@ return {
   },
   {
     'folke/flash.nvim',
+    lazy = true,
     opts = {
       labels = 'asdfghjklqwertyuiopzxcvbnm',
       modes = { char = { enabled = false } },
@@ -150,6 +155,7 @@ return {
   },
   {
     'stevearc/quicker.nvim',
+    lazy = true,
     opts = {
       opts = { number = false, relativenumber = false, signcolumn = 'auto', winfixheight = true, wrap = false },
       keys = {
@@ -164,6 +170,7 @@ return {
   },
   {
     'nvim-lualine/lualine.nvim',
+    lazy = false,
     dependencies = { 'nvim-tree/nvim-web-devicons', 'SmiteshP/nvim-navic' },
     opts = {
       options = {
@@ -189,6 +196,7 @@ return {
   },
   {
     'nvim-telescope/telescope.nvim',
+    lazy = true,
     dependencies = { 'nvim-lua/plenary.nvim', 'nvim-telescope/telescope-ui-select.nvim' },
     opts = {
       defaults = {
@@ -215,6 +223,7 @@ return {
   },
   {
     'nvim-treesitter/nvim-treesitter', branch = 'master',
+    event = { 'BufReadPost', 'BufNewFile' },
     -- This frozen API is deliberately paired with Neovim 0.11.7.
     -- The installer performs synchronous, checked parser installation.
     config = function()
@@ -225,14 +234,16 @@ return {
       })
     end,
   },
-  { 'lukas-reineke/indent-blankline.nvim', main = 'ibl', opts = { indent = { char = '│', tab_char = '»' }, scope = { enabled = true, show_start = false, show_end = false } } },
+  { 'lukas-reineke/indent-blankline.nvim', main = 'ibl', event = { 'BufReadPost', 'BufNewFile' }, opts = { indent = { char = '│', tab_char = '»' }, scope = { enabled = true, show_start = false, show_end = false } } },
   {
     'stevearc/aerial.nvim', branch = 'nvim-0.11',
+    cmd = { 'AerialToggle', 'AerialOpen', 'AerialNavToggle' },
     dependencies = { 'nvim-tree/nvim-web-devicons', 'nvim-treesitter/nvim-treesitter' },
     opts = { backends = { 'lsp', 'treesitter' }, icons = not s.icons and plain_icons or nil, layout = { min_width = 28, max_width = 42, default_direction = 'right' }, show_guides = true },
   },
   {
     'gorbit99/codewindow.nvim',
+    lazy = true,
     dependencies = { 'nvim-treesitter/nvim-treesitter' },
     opts = {
       auto_enable = false, minimap_width = s.minimap_width, width_multiplier = 4,
@@ -241,10 +252,11 @@ return {
       max_lines = 5000, use_git = false,
     },
   },
-  { 'folke/trouble.nvim', opts = { focus = true, auto_close = false, warn_no_results = false, open_no_results = true, win = { position = 'bottom', size = 12 }, preview = { type = 'main' } } },
-  { 'folke/which-key.nvim', opts = { preset = 'modern', delay = 350, icons = { mappings = s.icons }, win = { border = 'rounded' } } },
+  { 'folke/trouble.nvim', cmd = { 'Trouble' }, opts = { focus = true, auto_close = false, warn_no_results = false, open_no_results = true, win = { position = 'bottom', size = 12 }, preview = { type = 'main' } } },
+  { 'folke/which-key.nvim', event = 'VeryLazy', opts = { preset = 'modern', delay = 350, icons = { mappings = s.icons }, win = { border = 'rounded' } } },
   {
     'lewis6991/gitsigns.nvim',
+    event = { 'BufReadPre', 'BufNewFile' },
     opts = { signs = { add = { text = '│' }, change = { text = '│' }, delete = { text = '_' }, topdelete = { text = '‾' }, changedelete = { text = '│' } }, current_line_blame = false },
   },
   {

@@ -6,7 +6,7 @@ function M.setup()
   local function h(name, fg, bg, extra)
     vim.api.nvim_set_hl(0, name, vim.tbl_extend('force', { fg = fg, bg = bg }, extra or {}))
   end
-  h('Normal', c.fg, c.bg); h('NormalNC', c.fg, c.bg)
+  h('Normal', c.fg, c.bg); h('NormalNC', c.fg_dim, c.bg_inactive or c.bg)
   h('NormalFloat', c.fg, c.panel); h('FloatBorder', c.float_border or c.gutter, c.panel)
   h('FloatTitle', c.blue, c.panel, { bold = true })
   h('GoIdeHoverNormal', c.fg, c.panel)
