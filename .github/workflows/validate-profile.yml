@@ -25,7 +25,7 @@ jobs:
         working-directory: sample-project
         shell: bash
         run: |
-          "$HOME/.local/bin/nvim-go" --headless main_test.go             '+lua vim.api.nvim_win_set_cursor(0, { 46, 0 }); local c=require("go_ide.context").current(); assert(c.benchmark_name=="BenchmarkApp", vim.inspect(c)); local a=require("go_ide.actions").list(c); assert(a[1].id:match("^benchmark"), vim.inspect(a[1])); assert(vim.fn.exists(":GoActions")==2); assert(vim.fn.exists(":GoAction")==2); assert(vim.fn.exists(":GoActionRepeat")==2)'             +qa
+          "$HOME/.local/bin/nvim-go" --headless main_test.go             '+lua vim.api.nvim_win_set_cursor(0, { 48, 0 }); local c=require("go_ide.context").current(); assert(c.benchmark_name=="BenchmarkApp", vim.inspect(c)); local a=require("go_ide.actions").list(c); assert(a[1].id:match("^benchmark"), vim.inspect(a[1])); assert(vim.fn.exists(":GoActions")==2); assert(vim.fn.exists(":GoAction")==2); assert(vim.fn.exists(":GoActionRepeat")==2)'             +qa
       - name: Verify sample Go workflows
         working-directory: sample-project
         shell: bash

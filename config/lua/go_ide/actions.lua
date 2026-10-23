@@ -6,6 +6,19 @@ local M = {
   last_id = nil,
 }
 
+local usage_path = vim.fn.stdpath('state') .. '/action-usage.json'
+
+local function load_usage()
+  if vim.fn.filereadable(usage_path) ~= 1 then return end
+  local ok, decoded = pcall(vim.json.decode, table.concat(vim.fn.readfile(usage_path), '\n'))
+  if ok and type(decoded) == 'table' then M._usage = decoded end
+end
+
+local function save_usage()
+  vim.fn.mkdir(vim.fs.dirname(usage_path), 'p')
+  pcall(vim.fn.writefile, { vim.json.encode(M._usage) }, usage_path)
+end
+
 local function available(action, ctx)
   if not action.available then return true end
   local ok, result = pcall(action.available, ctx)
@@ -19,7 +32,10 @@ local function score(action, ctx)
     if ok and type(bonus) == 'number' then value = value + bonus end
   end
   local used = M._usage[action.id]
-  if used then value = value + math.min(15, used / 1000000) end
+  if type(used) == 'table' then
+    value = value + math.min(8, math.log((used.count or 0) + 1) / math.log(2))
+    if used.last_session == vim.g.go_ide_action_session then value = value + 2 end
+  end
   return value
 end
 
@@ -109,7 +125,12 @@ function M.run(id, ctx)
   end
   if result == false then return false end
   M._sequence = M._sequence + 1
-  M._usage[id] = M._sequence * 1000000
+  local used = M._usage[id]
+  if type(used) ~= 'table' then used = { count = 0 } end
+  used.count = (used.count or 0) + 1
+  used.last_session = vim.g.go_ide_action_session
+  M._usage[id] = used
+  save_usage()
   if action.repeatable ~= false then M.last_id = id end
   return true
 end
@@ -328,6 +349,8 @@ local function register_defaults()
 end
 
 function M.setup()
+  vim.g.go_ide_action_session = tostring((vim.uv or vim.loop).hrtime())
+  load_usage()
   register_defaults()
   vim.api.nvim_create_user_command('GoActions', M.pick, {
     desc = 'Open the context-aware Go IDE action hub',
