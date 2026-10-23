@@ -7,11 +7,19 @@ with `nvim-go`.
 
 ## Preview
 
-![Animated preview of the Neovim Go IDE showing the Explorer, Go editing view, status line and rounded documentation card.](docs/assets/nvim-go-showcase.gif)
+<p align="center">
+  <img src="docs/nvim-go-workbench.png" alt="Full Neovim Go IDE workbench with Explorer, Go source, tabs, breadcrumbs and minimap." width="100%">
+</p>
 
-The animation uses real captures from the configured editor. Font rasterization and
-terminal chrome can differ slightly between Linux and macOS, but the Neovim
-layout, palette and UI components are the same.
+<p align="center">
+  <img src="docs/assets/nvim-go-showcase.gif" alt="Animated tour of the Neovim Go IDE using real editor captures." width="620">
+</p>
+
+The full-resolution screenshot above is the visual reference. The smaller
+animation is a quick tour built from the repository's original PNG captures,
+with a separate palette per frame and dithering disabled to keep terminal text
+crisp. Font rasterization and terminal chrome can still differ slightly between
+Linux and macOS.
 
 ## Install on Fedora Asahi Remix
 

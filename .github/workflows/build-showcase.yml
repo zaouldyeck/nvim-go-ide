@@ -1,0 +1,48 @@
+name: Build README showcase
+
+on:
+  push:
+    branches:
+      - main
+      - fix/readme-showcase-quality
+    paths:
+      - docs/nvim-go-editor.png
+      - docs/nvim-go-hover.png
+      - docs/nvim-go-workbench.png
+      - scripts/build-showcase-gif.py
+      - .github/workflows/build-showcase.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Pillow
+        run: python -m pip install --disable-pip-version-check pillow==12.0.0
+
+      - name: Build animation
+        run: python scripts/build-showcase-gif.py
+
+      - name: Commit regenerated showcase
+        shell: bash
+        run: |
+          if git diff --quiet -- docs/assets/nvim-go-showcase.gif; then
+            echo "Showcase is already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/assets/nvim-go-showcase.gif
+          git commit -m "Regenerate README showcase"
+          git push
