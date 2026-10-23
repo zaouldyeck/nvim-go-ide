@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"io"
 	"strings"
 	"testing"
 )
@@ -41,5 +42,17 @@ func TestAppReturnsWriteError(t *testing.T) {
 	err := app([]string{"gopher"}, NewCliConfig(WithOutStream(failingWriter{})))
 	if err == nil || !strings.Contains(err.Error(), "output closed") {
 		t.Fatalf("expected output error, got %v", err)
+	}
+}
+
+func BenchmarkApp(b *testing.B) {
+	cfg := NewCliConfig(WithOutStream(io.Discard))
+	words := []string{"hello", "gopher", "räka"}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if err := app(words, cfg); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
