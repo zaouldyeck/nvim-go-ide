@@ -98,11 +98,11 @@ troubleshooting, see [docs/MACOS.md](docs/MACOS.md).
 | Area | Features |
 | --- | --- |
 | Appearance | Screenshot-sampled navy palette, italic purple keywords, cyan Go gophers, native rounded-card tabs, breadcrumbs, sticky code context, responsive Explorer/minimap, polished completion and floats, and the original Horizon per-pane status bars |
-| Navigation | Neo-tree Explorer, Flash label jumps, sticky Tree-sitter context, fuzzy search, outline, implementation/reference pickers, structural Go function/test motions, responsive layout and Focus Mode |
+| Navigation | Neo-tree Explorer, Flash label jumps, sticky Tree-sitter context, fuzzy search, outline, implementation/reference/call-hierarchy tools, Tree-sitter-native Go motions/text objects, recent-project switching, responsive layout and Focus Mode |
 | Go editing | gopls with visible progress, icon-rich completion, current-line diagnostics, custom LuaSnip templates, rounded hover/signature cards, rename/code actions, imports/formatting, module tidy, inlay hints and code lenses |
-| Execution | Run the current package interactively; nearest/file/package/module tests; exact rerun-last; persistent pass/fail/skip gutter state with timings; Quicker failure views; coverage markers |
+| Execution | Run the current package interactively; nearest/file/package/module/race tests; exact rerun-last; persistent test state; benchmarks with benchstat baseline comparison; Quicker failures; coverage markers |
 | Debugging | Delve, breakpoints and conditional breakpoints, step/continue, locals, watches, call stacks, expression evaluation, nearest-test debugging, compatible Go launch.json entries |
-| Daily workflow | Git gutter changes, hunk preview/staging/reset, blame, integrated shell, persistent undo, mouse support, discoverable Space-prefixed keys |
+| Daily workflow | Persistent project workspaces, project-local build/test config, branch-diff review, module browser, Go scratch buffers, Git hunks/blame, integrated shell, persistent undo and discoverable Space-prefixed keys |
 | Delivery | Installer, exact plugin lockfile, pinned native tool versions, sample CLI and tests, getting-started guide, shortcut reference, installation checker |
 
 ## IDE experience
@@ -132,11 +132,28 @@ all the time:
   same blue-grey rounded-border language. The existing Horizon statusbar is
   deliberately unchanged.
 
+- **Project workspaces** remember open files, editor split geometry, cursor
+  positions and the Explorer/minimap/breadcrumb state. Use **Space p p** to
+  switch among recent Go projects.
+- **Structural Go editing** is Tree-sitter-native: `]m` / `[m` move by
+  function/method, `]t` / `[t` by tests/benchmarks, and text objects such as
+  `daf`, `vaf` and `dim` operate on declarations/bodies.
+- **Reference highlighting** subtly marks uses of the symbol under the cursor;
+  incoming/outgoing call hierarchy is available with **Space c I/O**.
+- **Race tests and benchmarks** use the same project build tags, environment and
+  test flags as gopls. Benchmarks can save a baseline and compare later runs with
+  pinned `benchstat`.
+- **Large-file mode** automatically disables expensive per-buffer IDE features
+  for multi-megabyte/generated files.
+- **Space u p** opens a compact startup/runtime profile. Optional UI/debug/search
+  plugins are lazy-loaded instead of all being forced into startup.
+
 ## Start here
 
 - Read [the getting-started guide](docs/GETTING_STARTED.md).
 - On macOS, follow [the macOS installation guide](docs/MACOS.md).
 - Keep [the complete shortcut reference](docs/SHORTCUTS.md) nearby.
+- For build tags, test flags and project environment, see [project configuration](docs/PROJECT_CONFIG.md).
 - Open the printable `nvim-go-getting-started.pdf` supplied with this package.
 - Review [what was actually tested](docs/VALIDATION.md).
 
@@ -214,7 +231,7 @@ launcher at `~/.local/bin/nvim-go`. Neovim's `NVIM_APPNAME` keeps its configurat
 plugins, state and cache separate from ordinary `nvim`.
 
 The installer pins Neovim **0.11.7**, gopls **v0.24.0**, goimports from x/tools
-**v0.52.0**, and Delve **v1.27.2**. If a suitable Go 1.27 toolchain is not already
+**v0.52.0**, Delve **v1.27.2**, and benchstat to an exact x/perf commit. If a suitable Go 1.27 toolchain is not already
 available, it installs a private **Go 1.27.3** for this profile. `--install-go`
 forces that private toolchain. These versions are recorded in
 `scripts/versions.env`; the exact plugin commits are in `config/lazy-lock.json`.
