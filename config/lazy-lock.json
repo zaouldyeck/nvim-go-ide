@@ -27,6 +27,14 @@
     "branch": "master",
     "commit": "a8e175043ce3baaa89e0a6b5171bcd920aab3dad"
   },
+  "fidget.nvim": {
+    "branch": "main",
+    "commit": "9e0201673e08e997e7cf52afca5565c70bd117f3"
+  },
+  "flash.nvim": {
+    "branch": "main",
+    "commit": "5f0f270fdc7c5b0c21d903ee85b9cb06f2ac636a"
+  },
   "gitsigns.nvim": {
     "branch": "main",
     "commit": "fd780920613e541cbdfac41bf711583ed49f9249"
@@ -83,6 +91,10 @@
     "branch": "master",
     "commit": "cf12346a3414fa1b06af75c79faebe7f76df080a"
   },
+  "nvim-treesitter-context": {
+    "branch": "master",
+    "commit": "8decd73460d26ef0a0befb745d022dd1fc2c38b8"
+  },
   "nvim-web-devicons": {
     "branch": "master",
     "commit": "ec309a0eaff6ea967e58c275996155ab5c16938d"
@@ -90,6 +102,10 @@
   "plenary.nvim": {
     "branch": "master",
     "commit": "74b06c6c75e4eeb3108ec01852001636d85a932b"
+  },
+  "quicker.nvim": {
+    "branch": "master",
+    "commit": "4a6883cb13fe097a20a046eb55f6dffd239276e3"
   },
   "telescope-ui-select.nvim": {
     "branch": "master",
