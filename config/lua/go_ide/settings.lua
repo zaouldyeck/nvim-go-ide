@@ -17,6 +17,7 @@ return {
   explorer_hide_below = 108,
   explorer_restore_above = 122,
   test_gutter = true,           -- persistent pass/fail markers until the test file changes
+  benchmark_count = 5,
   startup_budget_ms = 180,      -- shown by :GoIdeProfile; informational, not a hard failure
   workspace_auto_restore = true,
   workspace_max_recent = 20,
