@@ -1,5 +1,13 @@
 local s = require('go_ide.settings')
-local M = { panels = {}, minimap_enabled = s.minimap, breadcrumbs_enabled = s.breadcrumbs ~= false }
+local M = {
+  panels = {},
+  minimap_enabled = s.minimap,
+  breadcrumbs_enabled = s.breadcrumbs ~= false,
+  focus_mode = false,
+  responsive_hidden_explorer = false,
+}
+local diagnostic_ns = vim.api.nvim_create_namespace('go_ide_current_diagnostic')
+local last_diagnostic_buf
 local breadcrumb_winbar = '%{%v:lua.GoIdeBreadcrumb()%}'
 local function editor_winbar()
   if M.breadcrumbs_enabled then return breadcrumb_winbar end
@@ -62,7 +70,7 @@ function M.tabline()
           if ok then icon = devicons.get_icon(name, vim.bo[buf].filetype, { default = true }) or '' end
         end
         local label = (icon ~= '' and (icon .. '  ') or '') .. name
-        if vim.bo[buf].modified then label = label .. '  ●' end
+        if vim.bo[buf].modified then label = label .. '  %#GoIdeTabModified#●%#GoIdeTabActive#' end
         local click = '%' .. buf .. '@v:lua.GoIdeTabClick@'
         if buf == current then
           out[#out + 1] = click
@@ -79,6 +87,28 @@ function M.tabline()
   end
   out[#out + 1] = '%#GoIdeTabFill#'
   return table.concat(out)
+end
+
+function M.cycle_buffer(step)
+  local buffers = {}
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.bo[buf].buflisted and vim.bo[buf].buftype == '' and vim.api.nvim_buf_get_name(buf) ~= '' then
+      buffers[#buffers + 1] = buf
+    end
+  end
+  if #buffers < 2 then return end
+  local current = M.last_editor_buf or vim.api.nvim_get_current_buf()
+  local index = 1
+  for i, buf in ipairs(buffers) do if buf == current then index = i; break end end
+  index = ((index - 1 + step) % #buffers) + 1
+  local win = editor_window()
+  if win then
+    vim.api.nvim_set_current_win(win)
+    vim.api.nvim_win_set_buf(win, buffers[index])
+  else
+    vim.api.nvim_set_current_buf(buffers[index])
+  end
+  M.last_editor_buf = buffers[index]
 end
 
 function M.tab_click(buf, _, button)
@@ -208,6 +238,249 @@ function M.toggle_minimap()
   M.refresh_minimap()
   vim.notify('Minimap ' .. (M.minimap_enabled and 'on (wide windows)' or 'off'))
 end
+local function clear_current_diagnostic()
+  if last_diagnostic_buf and vim.api.nvim_buf_is_valid(last_diagnostic_buf) then
+    vim.api.nvim_buf_clear_namespace(last_diagnostic_buf, diagnostic_ns, 0, -1)
+  end
+  last_diagnostic_buf = nil
+end
+
+function M.refresh_current_diagnostic()
+  clear_current_diagnostic()
+  if s.inline_diagnostics == false or vim.fn.mode():match('^[iR]') then return end
+  local buf = vim.api.nvim_get_current_buf()
+  if vim.bo[buf].buftype ~= '' or vim.api.nvim_win_get_config(0).relative ~= '' then return end
+  local row = vim.api.nvim_win_get_cursor(0)[1] - 1
+  local diagnostics = vim.diagnostic.get(buf, { lnum = row })
+  if #diagnostics == 0 then return end
+  table.sort(diagnostics, function(a, b) return (a.severity or 99) < (b.severity or 99) end)
+  local first = diagnostics[1]
+  local hl = ({
+    [vim.diagnostic.severity.ERROR] = 'DiagnosticError',
+    [vim.diagnostic.severity.WARN] = 'DiagnosticWarn',
+    [vim.diagnostic.severity.INFO] = 'DiagnosticInfo',
+    [vim.diagnostic.severity.HINT] = 'DiagnosticHint',
+  })[first.severity] or 'DiagnosticInfo'
+  local message = (first.message or ''):gsub('\n.*  _G.GoIdeBreadcrumb = M.breadcrumb
+  _G.GoIdeTabline = M.tabline
+  _G.GoIdeTabClick = M.tab_click
+  vim.o.tabline = '%!v:lua.GoIdeTabline()'
+  _G.GoIdePanelClick = function(index)
+    vim.schedule(function() M.open_panel(({ 'problems', 'output', 'debug', 'terminal' })[index]) end)
+  end
+  vim.api.nvim_create_autocmd({ 'BufWinEnter', 'WinEnter', 'FileType' }, {
+    callback = function()
+      local win = vim.api.nvim_get_current_win()
+      if vim.api.nvim_win_get_config(win).relative ~= '' then return end
+      if vim.bo.buftype == '' then
+        M.panels[win] = nil
+        if vim.api.nvim_buf_get_name(0) ~= '' then M.last_editor_buf = vim.api.nvim_get_current_buf() end
+        vim.wo.winbar = editor_winbar()
+      elseif vim.bo.filetype == 'goideoutput' then M.set_panel(vim.api.nvim_get_current_win(), 'output')
+      elseif vim.bo.filetype == 'Trouble' then M.set_panel(vim.api.nvim_get_current_win(), 'problems')
+      elseif vim.wo.winbar == ' ' or vim.wo.winbar == breadcrumb_winbar then
+        -- A split may inherit our header before becoming an Explorer/help pane.
+        vim.wo.winbar = ''
+      end
+    end,
+  })
+  M.refresh_breadcrumbs()
+  vim.api.nvim_create_autocmd({ 'BufAdd', 'BufDelete', 'BufModifiedSet', 'BufEnter' }, {
+    callback = function() vim.schedule(function() pcall(vim.cmd, 'redrawtabline') end) end,
+  })
+  vim.api.nvim_create_autocmd('DiagnosticChanged', {
+    callback = function()
+      vim.schedule(M.refresh_current_diagnostic)
+      for win, kind in pairs(M.panels) do
+        if vim.api.nvim_win_is_valid(win) then M.set_panel(win, kind) else M.panels[win] = nil end
+      end
+    end,
+  })
+  vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI', 'BufEnter' }, {
+    callback = function()
+      if #vim.api.nvim_list_uis() > 0 then vim.schedule(M.refresh_current_diagnostic) end
+    end,
+  })
+  vim.api.nvim_create_autocmd('InsertEnter', { callback = clear_current_diagnostic })
+  vim.api.nvim_create_autocmd('InsertLeave', { callback = function() vim.schedule(M.refresh_current_diagnostic) end })
+  vim.api.nvim_create_autocmd({ 'BufWinEnter', 'WinEnter' }, {
+    callback = function()
+      if #vim.api.nvim_list_uis() > 0 then vim.schedule(M.refresh_minimap) end
+    end,
+  })
+  vim.api.nvim_create_autocmd('VimResized', {
+    callback = function()
+      if #vim.api.nvim_list_uis() > 0 then vim.schedule(M.refresh_responsive_layout) end
+    end,
+  })
+  vim.api.nvim_create_autocmd('VimEnter', {
+    callback = function()
+      if #vim.api.nvim_list_uis() == 0 then return end
+      vim.schedule(function()
+        if s.auto_explorer and vim.bo.buftype == '' then
+          local previous = vim.api.nvim_get_current_win()
+          require('go_ide.explorer').open()
+          if vim.api.nvim_win_is_valid(previous) then vim.api.nvim_set_current_win(previous) end
+        end
+        M.refresh_responsive_layout()
+      end)
+    end,
+  })
+  vim.api.nvim_create_user_command('GoIdeHealth', function() vim.cmd('checkhealth go_ide') end, {})
+  vim.api.nvim_create_user_command('GoIdeBreadcrumbs', M.toggle_breadcrumbs, {})
+  vim.api.nvim_create_user_command('GoIdeFocus', M.toggle_focus_mode, {})
+  vim.api.nvim_create_user_command('GoIdeContext', M.toggle_sticky_context, {})
+  vim.api.nvim_create_user_command('GoIdeSettings', function()
+    vim.cmd.edit(vim.fn.stdpath('config') .. '/lua/go_ide/settings.lua')
+  end, {})
+  vim.api.nvim_create_user_command('GoIdeGuide', function()
+    local guide = vim.fn.stdpath('config') .. '/docs/GETTING_STARTED.md'
+    if vim.fn.filereadable(guide) == 1 then vim.cmd.edit(guide)
+    else vim.notify('Open docs/GETTING_STARTED.md from the downloaded package.') end
+  end, {})
+end
+return M
+, ''):gsub('%s+  _G.GoIdeBreadcrumb = M.breadcrumb
+  _G.GoIdeTabline = M.tabline
+  _G.GoIdeTabClick = M.tab_click
+  vim.o.tabline = '%!v:lua.GoIdeTabline()'
+  _G.GoIdePanelClick = function(index)
+    vim.schedule(function() M.open_panel(({ 'problems', 'output', 'debug', 'terminal' })[index]) end)
+  end
+  vim.api.nvim_create_autocmd({ 'BufWinEnter', 'WinEnter', 'FileType' }, {
+    callback = function()
+      local win = vim.api.nvim_get_current_win()
+      if vim.api.nvim_win_get_config(win).relative ~= '' then return end
+      if vim.bo.buftype == '' then
+        M.panels[win] = nil
+        if vim.api.nvim_buf_get_name(0) ~= '' then M.last_editor_buf = vim.api.nvim_get_current_buf() end
+        vim.wo.winbar = editor_winbar()
+      elseif vim.bo.filetype == 'goideoutput' then M.set_panel(vim.api.nvim_get_current_win(), 'output')
+      elseif vim.bo.filetype == 'Trouble' then M.set_panel(vim.api.nvim_get_current_win(), 'problems')
+      elseif vim.wo.winbar == ' ' or vim.wo.winbar == breadcrumb_winbar then
+        -- A split may inherit our header before becoming an Explorer/help pane.
+        vim.wo.winbar = ''
+      end
+    end,
+  })
+  M.refresh_breadcrumbs()
+  vim.api.nvim_create_autocmd({ 'BufAdd', 'BufDelete', 'BufModifiedSet', 'BufEnter' }, {
+    callback = function() vim.schedule(function() pcall(vim.cmd, 'redrawtabline') end) end,
+  })
+  vim.api.nvim_create_autocmd('DiagnosticChanged', {
+    callback = function()
+      for win, kind in pairs(M.panels) do
+        if vim.api.nvim_win_is_valid(win) then M.set_panel(win, kind) else M.panels[win] = nil end
+      end
+    end,
+  })
+  vim.api.nvim_create_autocmd({ 'BufWinEnter', 'WinEnter', 'VimResized' }, {
+    callback = function()
+      if #vim.api.nvim_list_uis() > 0 then vim.schedule(M.refresh_minimap) end
+    end,
+  })
+  vim.api.nvim_create_autocmd('VimEnter', {
+    callback = function()
+      if #vim.api.nvim_list_uis() == 0 then return end
+      vim.schedule(function()
+        if s.auto_explorer and vim.bo.buftype == '' then
+          local previous = vim.api.nvim_get_current_win()
+          require('go_ide.explorer').open()
+          if vim.api.nvim_win_is_valid(previous) then vim.api.nvim_set_current_win(previous) end
+        end
+        M.refresh_minimap()
+      end)
+    end,
+  })
+  vim.api.nvim_create_user_command('GoIdeHealth', function() vim.cmd('checkhealth go_ide') end, {})
+  vim.api.nvim_create_user_command('GoIdeBreadcrumbs', M.toggle_breadcrumbs, {})
+  vim.api.nvim_create_user_command('GoIdeSettings', function()
+    vim.cmd.edit(vim.fn.stdpath('config') .. '/lua/go_ide/settings.lua')
+  end, {})
+  vim.api.nvim_create_user_command('GoIdeGuide', function()
+    local guide = vim.fn.stdpath('config') .. '/docs/GETTING_STARTED.md'
+    if vim.fn.filereadable(guide) == 1 then vim.cmd.edit(guide)
+    else vim.notify('Open docs/GETTING_STARTED.md from the downloaded package.') end
+  end, {})
+end
+return M
+, '')
+  local chunks = { { '    ╰─ ', 'GoIdeDiagnosticArrow' }, { message, hl } }
+  if #diagnostics > 1 then
+    chunks[#chunks + 1] = { string.format('  +%d more', #diagnostics - 1), 'GoIdeDiagnosticMore' }
+  end
+  vim.api.nvim_buf_set_extmark(buf, diagnostic_ns, row, 0, {
+    virt_lines = { chunks },
+    virt_lines_above = false,
+    priority = 80,
+  })
+  last_diagnostic_buf = buf
+end
+
+local function set_context_enabled(enabled)
+  local ok, context = pcall(require, 'treesitter-context')
+  if not ok then return end
+  if enabled then context.enable() else context.disable() end
+end
+
+function M.toggle_focus_mode()
+  local explorer = require('go_ide.explorer')
+  if not M.focus_mode then
+    M.focus_restore = {
+      explorer = explorer.is_open(),
+      minimap = M.minimap_enabled,
+      breadcrumbs = M.breadcrumbs_enabled,
+      context = pcall(function() return require('treesitter-context').enabled() end)
+        and require('treesitter-context').enabled() or false,
+    }
+    M.focus_mode = true
+    if M.focus_restore.explorer then explorer.close() end
+    M.minimap_enabled = false
+    pcall(function() require('codewindow').close_minimap() end)
+    M.breadcrumbs_enabled = false
+    M.refresh_breadcrumbs()
+    set_context_enabled(false)
+    vim.notify('Focus mode on')
+  else
+    local restore = M.focus_restore or {}
+    M.focus_mode = false
+    M.minimap_enabled = restore.minimap ~= false
+    M.breadcrumbs_enabled = restore.breadcrumbs ~= false
+    M.refresh_breadcrumbs()
+    set_context_enabled(restore.context ~= false and s.sticky_context ~= false)
+    if restore.explorer then
+      local previous = vim.api.nvim_get_current_win()
+      explorer.open()
+      if vim.api.nvim_win_is_valid(previous) then vim.api.nvim_set_current_win(previous) end
+    end
+    M.refresh_minimap()
+    vim.notify('Focus mode off')
+  end
+end
+
+function M.toggle_sticky_context()
+  local ok, context = pcall(require, 'treesitter-context')
+  if not ok then return end
+  if context.enabled() then context.disable(); vim.notify('Sticky context off')
+  else context.enable(); vim.notify('Sticky context on') end
+end
+
+function M.refresh_responsive_layout()
+  if s.responsive_layout == false or M.focus_mode then return end
+  local explorer = require('go_ide.explorer')
+  if vim.o.columns < (s.explorer_hide_below or 108) and explorer.is_open() then
+    explorer.close()
+    M.responsive_hidden_explorer = true
+  elseif vim.o.columns >= (s.explorer_restore_above or 122)
+    and M.responsive_hidden_explorer and not explorer.is_open() then
+    local previous = vim.api.nvim_get_current_win()
+    explorer.open()
+    if vim.api.nvim_win_is_valid(previous) then vim.api.nvim_set_current_win(previous) end
+    M.responsive_hidden_explorer = false
+  end
+  M.refresh_minimap()
+end
+
 function M.setup()
   _G.GoIdeBreadcrumb = M.breadcrumb
   _G.GoIdeTabline = M.tabline
