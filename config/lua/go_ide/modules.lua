@@ -30,6 +30,7 @@ local function open_source(item, root)
 end
 
 function M.show()
+  pcall(require, 'telescope')
   local root = require('go_ide.project').root(vim.api.nvim_buf_get_name(0))
   local output = go_command({ 'list', '-m', '-u', 'all' }, root)
   if not output then return end

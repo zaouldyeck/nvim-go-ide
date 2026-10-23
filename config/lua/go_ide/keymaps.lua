@@ -26,6 +26,15 @@ function M.setup()
   map('n', '<leader>jb', '<C-o>', 'Jump back')
   map({ 'n', 'x', 'o' }, 's', function() require('flash').jump() end, 'Flash jump')
   map({ 'n', 'x', 'o' }, 'S', function() require('flash').treesitter() end, 'Flash syntax tree')
+  map('n', ']m', function() require('go_ide.structure').jump('function', 1) end, 'Next Go function/method')
+  map('n', '[m', function() require('go_ide.structure').jump('function', -1) end, 'Previous Go function/method')
+  map('n', ']t', function() require('go_ide.structure').jump('test', 1) end, 'Next Go test/benchmark')
+  map('n', '[t', function() require('go_ide.structure').jump('test', -1) end, 'Previous Go test/benchmark')
+  map('n', ']T', function() require('go_ide.structure').jump('type', 1) end, 'Next Go type')
+  map('n', '[T', function() require('go_ide.structure').jump('type', -1) end, 'Previous Go type')
+  map({ 'x', 'o' }, 'af', function() require('go_ide.structure').select('function', false) end, 'Around Go function/method')
+  map({ 'x', 'o' }, 'if', function() require('go_ide.structure').select('function', true) end, 'Inside Go function/method')
+  map({ 'x', 'o' }, 'at', function() require('go_ide.structure').select('type', false) end, 'Around Go type')
   map('n', '[c', function() require('treesitter-context').go_to_context(vim.v.count1) end, 'Jump to sticky context')
   map('n', '<Esc>', '<Cmd>nohlsearch<CR>', 'Clear search highlight')
 
@@ -80,6 +89,21 @@ function M.setup()
   map('n', '<leader>rn', vim.lsp.buf.rename, 'Rename symbol')
   map('n', '<F2>', vim.lsp.buf.rename, 'Rename symbol')
   map({ 'n', 'x' }, '<leader>ca', vim.lsp.buf.code_action, 'Code action')
+  map({ 'n', 'x' }, '<leader>cr', function()
+    vim.lsp.buf.code_action({ context = { only = { 'refactor' } } })
+  end, 'Refactor actions')
+  map('n', '<leader>cx', function()
+    vim.lsp.buf.code_action({ context = { only = { 'quickfix', 'source.fixAll' } } })
+  end, 'Fix actions')
+  map('n', '<leader>cI', function()
+    vim.lsp.buf.incoming_calls()
+    vim.defer_fn(function() pcall(require('quicker').open, { focus = true, height = 10 }) end, 120)
+  end, 'Incoming calls')
+  map('n', '<leader>cO', function()
+    vim.lsp.buf.outgoing_calls()
+    vim.defer_fn(function() pcall(require('quicker').open, { focus = true, height = 10 }) end, 120)
+  end, 'Outgoing calls')
+  map('n', '<leader>cd', function() require('go_ide.modules').show() end, 'Go dependencies')
   map('n', '<leader>cf', function() require('go_ide.lsp').format() end, 'Format and organize imports')
   map('n', '<leader>ci', function() require('go_ide.lsp').toggle_inlay_hints() end, 'Toggle inlay hints')
   map('n', '<leader>cl', vim.lsp.codelens.run, 'Run code lens')
@@ -93,6 +117,12 @@ function M.setup()
   map('n', '<leader>tc', go('coverage'), 'Run coverage')
   map('n', '<leader>tC', go('clear_coverage'), 'Clear coverage')
   map('n', '<leader>tr', go('rerun_last_test'), 'Rerun last test')
+  map('n', '<leader>tR', go('test_race', 'nearest'), 'Race-test nearest')
+  map('n', '<leader>tb', go('benchmark', 'nearest'), 'Benchmark nearest')
+  map('n', '<leader>tB', go('benchmark', 'package'), 'Benchmark package')
+  map('n', '<leader>tv', go('benchmark_baseline', 'nearest'), 'Save benchmark baseline')
+  map('n', '<leader>tV', go('benchmark_compare', 'nearest'), 'Compare benchmark')
+  map('n', '<leader>td', function() require('go_ide.debug').debug_test() end, 'Debug nearest test')
   map('n', '<leader>ts', go('stop'), 'Stop Go task')
   map('n', '<leader>rr', go('run'), 'Run Go package')
   -- Ex command completion parses arguments into a list without invoking a shell.
@@ -145,8 +175,12 @@ function M.setup()
   end, 'Reset Git hunk (confirm)')
   map('n', '<leader>gn', function() require('gitsigns').nav_hunk('next') end, 'Next Git hunk')
   map('n', '<leader>gp', function() require('gitsigns').nav_hunk('prev') end, 'Previous Git hunk')
+  map('n', '<leader>gd', function() require('go_ide.git').diff() end, 'Diff file vs branch base')
+  map('n', '<leader>gD', function() require('go_ide.git').review() end, 'Review branch changes')
+  map('n', '<leader>gq', function() require('go_ide.git').hunks() end, 'All Git hunks')
 
   map('n', '<leader>ui', '<Cmd>GoIdeHealth<CR>', 'IDE health check')
+  map('n', '<leader>up', '<Cmd>GoIdeProfile<CR>', 'IDE startup/runtime profile')
   map('n', '<leader>us', '<Cmd>GoIdeSettings<CR>', 'IDE settings')
   map('n', '<leader>uh', '<Cmd>GoIdeGuide<CR>', 'Getting-started guide')
   map('n', '<leader>ub', '<Cmd>GoIdeBreadcrumbs<CR>', 'Toggle symbol breadcrumbs')
@@ -157,19 +191,26 @@ function M.setup()
   end, 'Toggle relative line numbers')
 
   map('n', '<leader>xq', function() require('quicker').toggle({ focus = true, height = 10 }) end, 'Quickfix results')
-  map('n', ']m', function() vim.fn.search([[^\s*func\s]], 'W') end, 'Next Go function/method')
-  map('n', '[m', function() vim.fn.search([[^\s*func\s]], 'bW') end, 'Previous Go function/method')
-  map('n', ']t', function() vim.fn.search([[^\s*func\s\+Test]], 'W') end, 'Next Go test')
-  map('n', '[t', function() vim.fn.search([[^\s*func\s\+Test]], 'bW') end, 'Previous Go test')
+  map('n', '<leader>pp', function() require('go_ide.workspace').pick() end, 'Switch project')
+  map('n', '<leader>ps', function() require('go_ide.workspace').save() end, 'Save workspace')
+  map('n', '<leader>pr', function() require('go_ide.workspace').restore() end, 'Restore workspace')
+  map('n', '<leader>ng', function() require('go_ide.scratch').go() end, 'New Go scratch buffer')
 
-  require('which-key').add({
-    { '<leader>b', group = 'Buffers' }, { '<leader>c', group = 'Code' },
-    { '<leader>d', group = 'Debug' }, { '<leader>f', group = 'Find' },
-    { '<leader>g', group = 'Git' }, { '<leader>j', group = 'Jump history' },
-    { '<leader>m', group = 'Minimap' }, { '<leader>q', group = 'Quit' },
-    { '<leader>r', group = 'Run / rename' }, { '<leader>s', group = 'Search' }, { '<leader>t', group = 'Tests' },
-    { '<leader>u', group = 'Preferences / help' }, { '<leader>w', group = 'Windows / save' },
-    { '<leader>x', group = 'Problems' },
+  vim.api.nvim_create_autocmd('User', {
+    pattern = 'VeryLazy',
+    once = true,
+    callback = function()
+      require('which-key').add({
+        { '<leader>b', group = 'Buffers' }, { '<leader>c', group = 'Code' },
+        { '<leader>d', group = 'Debug' }, { '<leader>f', group = 'Find' },
+        { '<leader>g', group = 'Git' }, { '<leader>j', group = 'Jump history' },
+        { '<leader>m', group = 'Minimap' }, { '<leader>n', group = 'New / scratch' },
+        { '<leader>p', group = 'Projects' }, { '<leader>q', group = 'Quit' },
+        { '<leader>r', group = 'Run / rename' }, { '<leader>s', group = 'Search' },
+        { '<leader>t', group = 'Tests' }, { '<leader>u', group = 'Preferences / help' },
+        { '<leader>w', group = 'Windows / save' }, { '<leader>x', group = 'Problems' },
+      })
+    end,
   })
 end
 

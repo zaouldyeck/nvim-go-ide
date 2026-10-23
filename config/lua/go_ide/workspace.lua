@@ -147,6 +147,7 @@ function M.switch_to(root_dir)
 end
 
 function M.pick()
+  pcall(require, 'telescope')
   local recent = read_json(recent_path, {})
   if #recent == 0 then
     vim.notify('No recent Go projects yet.', vim.log.levels.INFO)
@@ -180,11 +181,16 @@ function M.setup()
     callback = function()
       if require('go_ide.settings').workspace_auto_restore == false then return end
       vim.schedule(function()
-        local named = false
+        local named_file = false
         for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-          if vim.bo[buf].buflisted and vim.api.nvim_buf_get_name(buf) ~= '' then named = true; break end
+          if vim.bo[buf].buflisted and vim.bo[buf].buftype == ''
+            and vim.api.nvim_buf_get_name(buf) ~= '' and vim.fn.filereadable(vim.api.nvim_buf_get_name(buf)) == 1 then
+            named_file = true
+            break
+          end
         end
-        if not named then M.restore(root()) end
+        local directory_arg = vim.fn.argc() == 1 and vim.fn.isdirectory(vim.fn.argv(0)) == 1
+        if not named_file or directory_arg then M.restore(root()) end
       end)
     end,
   })
