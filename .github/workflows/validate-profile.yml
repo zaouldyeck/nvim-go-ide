@@ -7,6 +7,7 @@ on:
       - "scripts/**"
       - "install.sh"
       - ".github/workflows/validate-profile.yml"
+      - "sample-project/**"
   workflow_dispatch:
 
 jobs:
@@ -28,4 +29,5 @@ jobs:
           if [[ ! -x "$GO" ]]; then GO="$(command -v go)"; fi
           "$GO" test ./...
           "$GO" test -race ./...
-          "$GO" test -run '^ -bench '^BenchmarkApp -benchmem -count=1
+          "$GO" test -run "^$" -bench "^BenchmarkApp$" -benchmem -count=1 | tee /tmp/nvim-go-bench.txt
+          grep -q "^BenchmarkApp" /tmp/nvim-go-bench.txt
