@@ -12,7 +12,7 @@ end
 vim.opt.rtp:prepend(path)
 require('lazy').setup({
   spec = { { import = 'plugins.ui' }, { import = 'plugins.go' } },
-  defaults = { lazy = false },
+  defaults = { lazy = true },
   lockfile = vim.fn.stdpath('config') .. '/lazy-lock.json',
   install = { missing = vim.env.NVIM_GO_CHECK_ONLY ~= '1' },
   checker = { enabled = false },

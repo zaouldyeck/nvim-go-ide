@@ -17,6 +17,11 @@ return {
   explorer_hide_below = 108,
   explorer_restore_above = 122,
   test_gutter = true,           -- persistent pass/fail markers until the test file changes
+  startup_budget_ms = 180,      -- shown by :GoIdeProfile; informational, not a hard failure
+  workspace_auto_restore = true,
+  workspace_max_recent = 20,
+  large_file_bytes = 2 * 1024 * 1024,
+  large_file_lines = 20000,
   format_on_save = true,
   inlay_hints = false,          -- keep the source uncluttered; toggle with Space c i
   codelens = true,
@@ -28,7 +33,7 @@ return {
   hover_border = 'rounded',
   -- Palette sampled from your current Neovim screenshot.
   colors = {
-    bg = '#1a1b26', panel = '#16161e', tab = '#16161e', chrome = '#171821',
+    bg = '#1a1b26', bg_inactive = '#181923', panel = '#16161e', tab = '#16161e', chrome = '#171821',
     float_border = '#52638b',
     active_tab = '#24283b', selection = '#292e42',
     line = '#292e42', border = '#1c1e2b', fg = '#c0caf5', fg_dim = '#a9b1d6',
