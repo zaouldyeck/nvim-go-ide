@@ -18,8 +18,13 @@ return {
         completion = { completeopt = "menu,menuone,noinsert" },
         preselect = cmp.PreselectMode.None,
         window = {
-          completion = cmp.config.window.bordered(),
-          documentation = cmp.config.window.bordered(),
+          completion = cmp.config.window.bordered({
+            winhighlight = 'Normal:CmpPmenu,FloatBorder:CmpBorder,CursorLine:CmpSel,Search:None',
+            scrollbar = true,
+          }),
+          documentation = cmp.config.window.bordered({
+            winhighlight = 'Normal:CmpPmenu,FloatBorder:CmpBorder,Search:None',
+          }),
         },
         mapping = cmp.mapping.preset.insert({
           ["<C-Space>"] = cmp.mapping.complete(),
@@ -70,8 +75,18 @@ return {
         formatting = {
           fields = { "abbr", "kind", "menu" },
           format = function(entry, item)
-            if #item.abbr > 55 then item.abbr = item.abbr:sub(1, 52) .. "…" end
-            item.menu = ({ nvim_lsp = "Go", luasnip = "Snippet", path = "Path", buffer = "Buffer" })[entry.source.name]
+            local icons = {
+              Text = '󰉿', Method = '󰆧', Function = '󰊕', Constructor = '',
+              Field = '󰜢', Variable = '󰀫', Class = '󰠱', Interface = '',
+              Module = '', Property = '󰜢', Unit = '󰑭', Value = '󰎠',
+              Enum = '', Keyword = '󰌋', Snippet = '', Color = '󰏘',
+              File = '󰈙', Reference = '󰈇', Folder = '󰉋', EnumMember = '',
+              Constant = '󰏿', Struct = '󰙅', Event = '', Operator = '󰆕',
+              TypeParameter = '󰅲',
+            }
+            if #item.abbr > 48 then item.abbr = item.abbr:sub(1, 45) .. "…" end
+            item.kind = (icons[item.kind] or '·') .. ' ' .. item.kind
+            item.menu = ({ nvim_lsp = ' Go', luasnip = ' Snippet', path = ' Path', buffer = ' Buffer' })[entry.source.name]
             return item
           end,
         },

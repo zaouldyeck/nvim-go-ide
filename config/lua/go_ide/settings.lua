@@ -10,6 +10,13 @@ return {
   minimap = true,               -- enabled automatically on sufficiently wide editor windows
   minimap_min_columns = 140,
   minimap_width = 10,
+  sticky_context = true,        -- pin the current Go type/function while scrolling
+  sticky_context_lines = 2,
+  inline_diagnostics = true,    -- show the current line's diagnostic below the source line
+  responsive_layout = true,     -- collapse secondary chrome on narrow terminal windows
+  explorer_hide_below = 108,
+  explorer_restore_above = 122,
+  test_gutter = true,           -- persistent pass/fail markers until the test file changes
   format_on_save = true,
   inlay_hints = false,          -- keep the source uncluttered; toggle with Space c i
   codelens = true,
@@ -22,6 +29,7 @@ return {
   -- Palette sampled from your current Neovim screenshot.
   colors = {
     bg = '#1a1b26', panel = '#16161e', tab = '#16161e', chrome = '#171821',
+    float_border = '#52638b',
     active_tab = '#24283b', selection = '#292e42',
     line = '#292e42', border = '#1c1e2b', fg = '#c0caf5', fg_dim = '#a9b1d6',
     muted = '#565f89', hidden = '#424455', gutter = '#3b4261', comment = '#565f89',

@@ -4,7 +4,7 @@
 
 This setup combines the appearance of your current Neovim screenshots with a complete Go IDE workflow. It uses a navy editor, darker Neo-tree Explorer, lavender text, italic purple keywords, green strings, blue functions, teal types, amber parameters, and cyan Go gophers. The Horizon powerline status line uses rose accents in Normal mode and cyan in Insert mode at both ends of the bar. Your terminal supplies the font.
 
-Relative line numbers and subtle tab guides make the editor familiar. File tabs appear when several files are open. Breadcrumbs and the minimap start hidden and can be shown when useful. Search, diagnostics, testing, debugging, Git, and the bottom terminal/output area remain available in this compact layout.
+Relative line numbers and subtle tab guides make the editor familiar. The rounded file strip stays visible, breadcrumbs are shown by default, sticky Tree-sitter context appears while scrolling through long functions, and the minimap appears automatically when the terminal is wide enough. The layout responds to smaller windows and Focus Mode can temporarily reduce it to just code plus the familiar statusbar.
 
 Go language features come from `gopls`, completion from `nvim-cmp`, formatting and import management from `goimports`, and debugging from Delve through Neovim's debug adapter plugins. These are installed and configured together. You do not need to configure a language server manually.
 
@@ -77,6 +77,26 @@ cd ~/code/golang/cli
 Start from the project directory so Explorer, search, terminal commands, and project launch configurations share the same working directory. Open a Go file and let `gopls` finish its first indexing pass. Large modules may need a moment.
 
 Run `:GoIdeHealth` inside Neovim to check the profile. In Neovim, a command such as `:GoIdeHealth` means: press `Esc`, type the colon and command, then press `Enter`.
+
+## 1.5. New IDE ergonomics
+
+A few features are intentionally automatic:
+
+- **gopls progress** appears as a small transient card while the workspace is
+  loading or being analyzed.
+- **Diagnostics** keep gutter signs and undercurls, but the full message appears
+  only when the cursor reaches the affected line.
+- **Sticky context** keeps up to two enclosing Go declarations visible while
+  scrolling. Press **Space u c** to toggle it.
+- Press **s** and type a short search to get Flash jump labels over visible
+  matches; **S** selects Tree-sitter structural targets.
+- **Space u f** enters Focus Mode. Explorer, minimap, breadcrumbs and sticky
+  context disappear, then return exactly as they were on the next toggle.
+- On narrow windows the Explorer can hide itself automatically. Widening the
+  terminal restores it.
+- After tests run, top-level tests show ✓, ✗ or ○ in the gutter with their
+  duration. Editing package source clears those results so stale state is never
+  presented as current.
 
 ## 2. The essential Neovim controls
 

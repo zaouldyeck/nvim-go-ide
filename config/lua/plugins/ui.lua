@@ -80,6 +80,89 @@ return {
   },
   { 'SmiteshP/nvim-navic', opts = { highlight = true, icons = not s.icons and plain_icons or nil, separator = '  ›  ', depth_limit = 5, lsp = { auto_attach = true, preference = { 'gopls' } } } },
   {
+    'nvim-treesitter/nvim-treesitter-context',
+    dependencies = { 'nvim-treesitter/nvim-treesitter' },
+    opts = {
+      enable = s.sticky_context ~= false,
+      multiwindow = true,
+      max_lines = s.sticky_context_lines or 2,
+      min_window_height = 12,
+      line_numbers = true,
+      multiline_threshold = 3,
+      trim_scope = 'outer',
+      mode = 'cursor',
+      separator = nil,
+      zindex = 19,
+      on_attach = function(buf)
+        return vim.bo[buf].buftype == '' and vim.bo[buf].filetype ~= ''
+      end,
+    },
+  },
+  {
+    'j-hui/fidget.nvim',
+    config = function()
+      local notification = require('fidget.notification')
+      require('fidget').setup({
+        progress = {
+          suppress_on_insert = true,
+          display = {
+            done_ttl = 1.2,
+            progress_icon = { 'dots' },
+            done_icon = '✓',
+            group_style = 'GoIdeNotifyTitle',
+            progress_style = 'GoIdeNotifyProgress',
+            done_style = 'GoIdeNotifyDone',
+          },
+        },
+        notification = {
+          override_vim_notify = true,
+          configs = {
+            default = vim.tbl_extend('force', notification.default_config, {
+              name = false, icon = false, ttl = 2.2,
+              annote_style = 'GoIdeNotifyTitle',
+              info_style = 'GoIdeNotifyInfo',
+              warn_style = 'GoIdeNotifyWarn',
+              error_style = 'GoIdeNotifyError',
+            }),
+          },
+          view = {
+            stack_upwards = true, align = 'message', reflow = true,
+            group_separator = '', line_margin = 1,
+          },
+          window = {
+            normal_hl = 'GoIdeNotifyNormal', winblend = 0, border = 'rounded',
+            max_width = 52, max_height = 8, x_padding = 1, y_padding = 1,
+            align = 'bottom', h_align = 'right', relative = 'editor',
+            avoid = { 'neo-tree', 'aerial', 'Trouble', 'dapui_scopes', 'dapui_stacks' },
+          },
+        },
+      })
+    end,
+  },
+  {
+    'folke/flash.nvim',
+    opts = {
+      labels = 'asdfghjklqwertyuiopzxcvbnm',
+      modes = { char = { enabled = false } },
+      label = { uppercase = false, rainbow = { enabled = false } },
+      highlight = { backdrop = true, matches = true },
+    },
+  },
+  {
+    'stevearc/quicker.nvim',
+    opts = {
+      opts = { number = false, relativenumber = false, signcolumn = 'auto', winfixheight = true, wrap = false },
+      keys = {
+        { '>', function() require('quicker').expand({ before = 2, after = 2, add_to_existing = true }) end, desc = 'Expand context' },
+        { '<', function() require('quicker').collapse() end, desc = 'Collapse context' },
+      },
+      edit = { enabled = true, autosave = 'unmodified' },
+      highlight = { treesitter = true, lsp = true, load_buffers = false },
+      follow = { enabled = true },
+      trim_leading_whitespace = 'common',
+    },
+  },
+  {
     'nvim-lualine/lualine.nvim',
     dependencies = { 'nvim-tree/nvim-web-devicons', 'SmiteshP/nvim-navic' },
     opts = {

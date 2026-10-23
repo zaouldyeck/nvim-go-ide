@@ -1,0 +1,22 @@
+name: Validate profile
+
+on:
+  pull_request:
+    paths:
+      - "config/**"
+      - "scripts/**"
+      - "install.sh"
+      - ".github/workflows/validate-profile.yml"
+  workflow_dispatch:
+
+jobs:
+  install-and-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install prerequisites
+        run: sudo apt-get update && sudo apt-get install -y git curl tar unzip gcc ripgrep
+      - name: Install isolated Go IDE
+        run: bash install.sh
+      - name: Run installation checks
+        run: bash scripts/check.sh "$HOME/.local/bin/nvim-go"

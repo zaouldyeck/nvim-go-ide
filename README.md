@@ -97,13 +97,40 @@ troubleshooting, see [docs/MACOS.md](docs/MACOS.md).
 
 | Area | Features |
 | --- | --- |
-| Appearance | Screenshot-sampled navy palette, italic purple keywords, cyan Go gophers, relative line numbers, tab guides, native rounded-card file tabs, breadcrumb header, wide-screen minimap, and the original Horizon per-pane status bars |
-| Navigation | Neo-tree Explorer with a blue folder icon, bold directory header and hidden-file summary; fuzzy file/buffer search, project and open-buffer text search, search history, outline, document/workspace symbols, split windows, definition/reference/implementation jumps |
-| Go editing | gopls, completion, custom LuaSnip templates with return-type choices and Ctrl+L/Ctrl+H navigation, rounded bordered signature help and rich hover docs, rename, dropdown code actions, import management, format on save, explicit module tidy, optional inlay hints and code lenses |
-| Execution | Run the current package in a terminal with stdin support; run nearest/file/package/module tests; navigable failure locations; coverage markers |
+| Appearance | Screenshot-sampled navy palette, italic purple keywords, cyan Go gophers, native rounded-card tabs, breadcrumbs, sticky code context, responsive Explorer/minimap, polished completion and floats, and the original Horizon per-pane status bars |
+| Navigation | Neo-tree Explorer, Flash label jumps, sticky Tree-sitter context, fuzzy search, outline, implementation/reference pickers, structural Go function/test motions, responsive layout and Focus Mode |
+| Go editing | gopls with visible progress, icon-rich completion, current-line diagnostics, custom LuaSnip templates, rounded hover/signature cards, rename/code actions, imports/formatting, module tidy, inlay hints and code lenses |
+| Execution | Run the current package interactively; nearest/file/package/module tests; exact rerun-last; persistent pass/fail/skip gutter state with timings; Quicker failure views; coverage markers |
 | Debugging | Delve, breakpoints and conditional breakpoints, step/continue, locals, watches, call stacks, expression evaluation, nearest-test debugging, compatible Go launch.json entries |
 | Daily workflow | Git gutter changes, hunk preview/staging/reset, blame, integrated shell, persistent undo, mouse support, discoverable Space-prefixed keys |
 | Delivery | Installer, exact plugin lockfile, pinned native tool versions, sample CLI and tests, getting-started guide, shortcut reference, installation checker |
+
+## IDE experience
+
+The profile now adapts around the code instead of keeping every surface visible
+all the time:
+
+- **Sticky context** pins at most two enclosing Go type/function lines while you
+  scroll. Jump back to that context with `[c`; toggle it with **Space u c**.
+- **Current-line diagnostics** stay out of the way until your cursor lands on a
+  problem, then show one compact message immediately below that source line.
+- **gopls progress and notifications** use small rounded transient cards rather
+  than disappearing into `:messages`.
+- **Flash navigation** uses **s** for labeled jumps and **S** for syntax-tree
+  selection. `]m` / `[m` move between Go functions and methods; `]t` / `[t`
+  move between tests.
+- **Focus Mode** (**Space u f**) temporarily hides Explorer, breadcrumbs,
+  minimap and sticky context, then restores the exact previous layout.
+- **Responsive layout** hides Explorer on narrow terminals and restores it when
+  there is room again; the minimap remains width-aware.
+- **Go tests remember state**: top-level tests receive ✓ / ✗ / ○ gutter markers
+  and duration hints until package source changes. **Space t r** reruns the exact
+  previous test command.
+- **Quicker** presents failure locations with syntax/LSP highlighting and
+  expandable context; use **Space x q**.
+- Completion, Telescope, WhichKey, DAP floats and documentation cards share the
+  same blue-grey rounded-border language. The existing Horizon statusbar is
+  deliberately unchanged.
 
 ## Start here
 

@@ -3,7 +3,9 @@
 local M = { state = { running = false, last_result = nil } }
 local output_buf, output_win, run_buf, run_job, last_go_buf
 local coverage_ns = vim.api.nvim_create_namespace("go_ide_coverage")
+local test_ns = vim.api.nvim_create_namespace("go_ide_test_status")
 local coverage = {}
+local test_results = {}
 
 local function notify(message, level) vim.notify(message, level or vim.log.levels.INFO, { title = "Go IDE" }) end
 local function tool(name) return require("go_ide.lsp").tool(name) end
@@ -57,7 +59,7 @@ local function ensure_output()
   vim.bo[output_buf].filetype = "goideoutput"
   vim.bo[output_buf].modifiable = false
   vim.keymap.set("n", "q", function() vim.cmd.close() end, { buffer = output_buf, desc = "Close Go output" })
-  vim.keymap.set("n", "<CR>", function() vim.cmd.copen() end, { buffer = output_buf, desc = "Show test failures" })
+  vim.keymap.set("n", "<CR>", function() M.open_failures() end, { buffer = output_buf, desc = "Show test failures" })
   return output_buf
 end
 
@@ -128,6 +130,12 @@ function M.toggle_output()
   else M.open_output(true) end
 end
 
+function M.open_failures()
+  local ok, quicker = pcall(require, "quicker")
+  if ok then quicker.open({ focus = true, height = 8 })
+  else vim.cmd("botright copen 8") end
+end
+
 local function package_dir(context, package)
   if context.module_name and package then
     if package == context.module_name then return context.root end
@@ -176,6 +184,59 @@ local function test_functions(buf)
   return tests
 end
 
+local function apply_test_results(buf)
+  if require("go_ide.settings").test_gutter == false
+    or not vim.api.nvim_buf_is_valid(buf) or not vim.api.nvim_buf_is_loaded(buf) then return end
+  vim.api.nvim_buf_clear_namespace(buf, test_ns, 0, -1)
+  local file = vim.api.nvim_buf_get_name(buf)
+  if not file:match("_test%.go$") then return end
+  local results = test_results[vim.fs.dirname(file)]
+  if not results then return end
+  local tests = test_functions(buf) or {}
+  for _, test in ipairs(tests) do
+    local result = results[test.name]
+    if result then
+      local icon, hl = "○", "GoTestSkip"
+      if result.action == "pass" then icon, hl = "✓", "GoTestPass"
+      elseif result.action == "fail" then icon, hl = "✗", "GoTestFail"
+      elseif result.action == "run" then icon, hl = "●", "GoTestRun" end
+      local opts = { sign_text = icon, sign_hl_group = hl, priority = 15 }
+      if result.elapsed and result.elapsed > 0 then
+        local duration = result.elapsed < 1
+          and string.format("  %.0fms", result.elapsed * 1000)
+          or string.format("  %.2fs", result.elapsed)
+        opts.virt_text = { { duration, "GoTestDuration" } }
+        opts.virt_text_pos = "eol"
+        opts.virt_text_hide = true
+      end
+      vim.api.nvim_buf_set_extmark(buf, test_ns, test.first - 1, 0, opts)
+    end
+  end
+end
+
+local function refresh_test_results(directory)
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    local file = vim.api.nvim_buf_get_name(buf)
+    if vim.api.nvim_buf_is_loaded(buf) and file:match("_test%.go$")
+      and vim.fs.dirname(file) == directory then
+      apply_test_results(buf)
+    end
+  end
+end
+
+local function record_test_event(context, event)
+  if require("go_ide.settings").test_gutter == false or not event.Test
+    or event.Test:find("/", 1, true)
+    or not vim.tbl_contains({ "run", "pass", "fail", "skip" }, event.Action) then return end
+  local directory = package_dir(context, event.Package)
+  test_results[directory] = test_results[directory] or {}
+  test_results[directory][event.Test] = {
+    action = event.Action,
+    elapsed = tonumber(event.Elapsed),
+  }
+  refresh_test_results(directory)
+end
+
 function M.test_pattern(scope, buf)
   buf = (not buf or buf == 0) and vim.api.nvim_get_current_buf() or buf
   if not vim.api.nvim_buf_get_name(buf):match("_test%.go$") then
@@ -221,7 +282,10 @@ local function run_task(args, context, cwd, after)
     local ok, event = pcall(vim.json.decode, line)
     local output, package, test_key = line, nil, nil
     if ok and type(event) == "table" and event.Action then
-      if event.Test and counts[event.Action] ~= nil then counts[event.Action] = counts[event.Action] + 1 end
+      record_test_event(context, event)
+      if event.Test and not event.Test:find("/", 1, true) and counts[event.Action] ~= nil then
+        counts[event.Action] = counts[event.Action] + 1
+      end
       if event.Test then
         test_key = (event.Package or "") .. "/" .. event.Test
         if event.Action == "fail" then
@@ -272,7 +336,7 @@ local function run_task(args, context, cwd, after)
       M.state.last_result = { code = code, counts = counts, summary = summary, quickfix = items, cancelled = cancelled }
       vim.fn.setqflist({}, "r", { title = title, items = items })
       notify(summary, (code == 0 or cancelled) and vim.log.levels.INFO or vim.log.levels.ERROR)
-      if code ~= 0 and not cancelled and #items > 0 then vim.cmd("botright copen 8") end
+      if code ~= 0 and not cancelled and #items > 0 then M.open_failures() end
       if after and code == 0 and not cancelled then after() end
     end,
   })
@@ -299,7 +363,21 @@ function M.test(scope)
     vim.list_extend(args, { "-run", pattern })
   end
   args[#args + 1] = scope == "all" and "./..." or "."
-  return run_task(args, context, scope == "all" and context.root or context.directory)
+  local cwd = scope == "all" and context.root or context.directory
+  M.state.last_test = {
+    args = vim.deepcopy(args),
+    context = vim.deepcopy(context),
+    cwd = cwd,
+    scope = scope,
+  }
+  return run_task(args, context, cwd)
+end
+
+function M.rerun_last_test()
+  local last = M.state.last_test
+  if not last then notify("No previous Go test to rerun.", vim.log.levels.WARN); return false end
+  if not M.save_go_buffers(last.context) then return false end
+  return run_task(vim.deepcopy(last.args), vim.deepcopy(last.context), last.cwd)
 end
 
 local function module_metadata_buffers(root)
@@ -478,13 +556,26 @@ function M.setup()
   M._configured = true
   local group = vim.api.nvim_create_augroup("GoIDE_Tasks", { clear = true })
   vim.api.nvim_create_autocmd("BufEnter", {
-    group = group, pattern = "*.go", callback = function(event) last_go_buf = event.buf; apply_coverage(event.buf) end,
+    group = group, pattern = "*.go", callback = function(event)
+      last_go_buf = event.buf
+      apply_coverage(event.buf)
+      apply_test_results(event.buf)
+    end,
   })
   -- Coverage positions refer to the tested text. Hide stale signs after edits.
   vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI" }, {
     group = group, pattern = "*.go", callback = function(event)
-      coverage[vim.api.nvim_buf_get_name(event.buf)] = nil
+      local file = vim.api.nvim_buf_get_name(event.buf)
+      coverage[file] = nil
+      test_results[vim.fs.dirname(file)] = nil
       vim.api.nvim_buf_clear_namespace(event.buf, coverage_ns, 0, -1)
+      for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        local other = vim.api.nvim_buf_get_name(buf)
+        if other ~= "" and vim.api.nvim_buf_is_valid(buf)
+          and vim.fs.dirname(other) == vim.fs.dirname(file) then
+          vim.api.nvim_buf_clear_namespace(buf, test_ns, 0, -1)
+        end
+      end
     end,
   })
   local function highlights()
@@ -498,6 +589,7 @@ function M.setup()
     { nargs = "*", desc = "Run current Go package in an interactive terminal (arguments supported)" })
   vim.api.nvim_create_user_command("GoTest", function(opts) M.test(opts.args == "" and "package" or opts.args) end,
     { nargs = "?", complete = function() return { "nearest", "file", "package", "all" } end, desc = "Run Go tests" })
+  vim.api.nvim_create_user_command("GoTestLast", M.rerun_last_test, { desc = "Rerun the exact previous Go test command" })
   vim.api.nvim_create_user_command("GoModTidy", M.mod_tidy, { desc = "Save module buffers and tidy dependencies asynchronously" })
   vim.api.nvim_create_user_command("GoCoverage", M.coverage, { desc = "Test the module with coverage signs" })
   vim.api.nvim_create_user_command("GoCoverageClear", M.clear_coverage, { desc = "Clear Go coverage signs" })
