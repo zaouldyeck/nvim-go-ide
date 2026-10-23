@@ -39,6 +39,62 @@ local function normal_files(root_dir)
   return files
 end
 
+local function encode_layout(node, root_dir, positions)
+  if not node then return nil end
+  if node[1] == 'leaf' then
+    local win = node[2]
+    if not vim.api.nvim_win_is_valid(win) then return nil end
+    local buf = vim.api.nvim_win_get_buf(win)
+    local file = vim.api.nvim_buf_get_name(buf)
+    if vim.bo[buf].buftype ~= '' or file == ''
+      or not vim.startswith(vim.fs.normalize(file), root_dir .. '/') then return nil end
+    positions[file] = vim.api.nvim_win_get_cursor(win)
+    return { kind = 'leaf', file = file }
+  end
+  local children = {}
+  for _, child in ipairs(node[2] or {}) do
+    local encoded = encode_layout(child, root_dir, positions)
+    if encoded then children[#children + 1] = encoded end
+  end
+  if #children == 0 then return nil end
+  if #children == 1 then return children[1] end
+  return { kind = node[1], children = children }
+end
+
+local function close_extra_editor_windows()
+  local keep
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    local buf = vim.api.nvim_win_get_buf(win)
+    if vim.api.nvim_win_get_config(win).relative == '' and vim.bo[buf].buftype == '' then
+      if not keep then keep = win
+      elseif vim.api.nvim_win_is_valid(win) then pcall(vim.api.nvim_win_close, win, false) end
+    end
+  end
+  return keep or vim.api.nvim_get_current_win()
+end
+
+local function restore_layout(node, win, opened, positions)
+  if not node or not vim.api.nvim_win_is_valid(win) then return end
+  if node.kind == 'leaf' then
+    local buf = opened[node.file]
+    if buf then
+      vim.api.nvim_win_set_buf(win, buf)
+      local pos = positions and positions[node.file]
+      if pos then pcall(vim.api.nvim_win_set_cursor, win, pos) end
+    end
+    return
+  end
+  local children = node.children or {}
+  if #children == 0 then return end
+  restore_layout(children[1], win, opened, positions)
+  for index = 2, #children do
+    vim.api.nvim_set_current_win(win)
+    vim.cmd(node.kind == 'row' and 'rightbelow vsplit' or 'belowright split')
+    local child_win = vim.api.nvim_get_current_win()
+    restore_layout(children[index], child_win, opened, positions)
+  end
+end
+
 function M.record(root_dir)
   root_dir = vim.fs.normalize(root_dir or root())
   local recent = read_json(recent_path, {})
@@ -59,10 +115,13 @@ function M.save(root_dir)
   local ui = require('go_ide.ui')
   local explorer = require('go_ide.explorer')
   local current = vim.api.nvim_buf_get_name(0)
+  local positions = {}
   local data = {
     root = root_dir,
     files = normal_files(root_dir),
     current = vim.startswith(current, root_dir .. '/') and current or nil,
+    layout = encode_layout(vim.fn.winlayout(), root_dir, positions),
+    positions = positions,
     explorer = explorer.is_open(),
     minimap = ui.minimap_enabled,
     breadcrumbs = ui.breadcrumbs_enabled,
@@ -104,7 +163,17 @@ function M.restore(root_dir)
   if not target then
     for _, buf in pairs(opened) do target = buf; break end
   end
-  if target then vim.api.nvim_win_set_buf(0, target) end
+  if target then
+    local base_win = close_extra_editor_windows()
+    if data.layout then restore_layout(data.layout, base_win, opened, data.positions or {})
+    else vim.api.nvim_win_set_buf(base_win, target) end
+    for _, win in ipairs(vim.api.nvim_list_wins()) do
+      if vim.api.nvim_win_get_buf(win) == target then
+        vim.api.nvim_set_current_win(win)
+        break
+      end
+    end
+  end
   local ui = require('go_ide.ui')
   if data.minimap ~= nil then ui.minimap_enabled = data.minimap end
   if data.breadcrumbs ~= nil then ui.breadcrumbs_enabled = data.breadcrumbs end
