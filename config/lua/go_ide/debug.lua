@@ -14,7 +14,14 @@ function M.debug_test()
     else vim.api.nvim_set_current_buf(context.buf) end
   end
   local adapter = require("dap-go")
-  if adapter.debug_test({ program = context.directory, cwd = context.directory }) then
+  local project = require("go_ide.project")
+  local flags = table.concat(project.build_flags(context.root), " ")
+  if adapter.debug_test({
+    program = context.directory,
+    cwd = context.directory,
+    buildFlags = flags,
+    env = project.env(context.root),
+  }) then
     M.last_test = { context = context, name = adapter.last_testname }
   end
 end
@@ -30,7 +37,9 @@ function M.debug_last_test()
     type = "go", name = last.name, request = "launch", mode = "test",
     program = last.context.directory, cwd = last.context.directory,
     args = { "-test.run", "^" .. last.name .. "$", "-test.v" },
-    buildFlags = require("dap-go").test_buildflags, outputMode = "remote",
+    buildFlags = table.concat(require("go_ide.project").build_flags(last.context.root), " "),
+    env = require("go_ide.project").env(last.context.root),
+    outputMode = "remote",
   })
 end
 
@@ -38,8 +47,13 @@ function M.setup()
   if M._configured then return end
   M._configured = true
   local dap, dapui = require("dap"), require("dapui")
+  local active_root = require("go_ide.project").root(vim.api.nvim_buf_get_name(0))
   require("dap-go").setup({
-    delve = { path = require("go_ide.lsp").tool("dlv"), initialize_timeout_sec = 30 },
+    delve = {
+      path = require("go_ide.lsp").tool("dlv"),
+      initialize_timeout_sec = 30,
+      build_flags = table.concat(require("go_ide.project").build_flags(active_root), " "),
+    },
     tests = { verbose = true },
   })
   -- Delve builds in its own process directory, before applying the debuggee's
@@ -63,7 +77,9 @@ function M.setup()
   -- Debug the whole package: `main.go` frequently relies on neighbouring files.
   dap.configurations.go = {
     { type = "go", name = "Go: debug current package", request = "launch", mode = "debug",
-      program = "${fileDirname}", cwd = "${fileDirname}" },
+      program = "${fileDirname}", cwd = "${fileDirname}",
+      buildFlags = function() return table.concat(require("go_ide.project").build_flags(require("go_ide.project").root(vim.api.nvim_buf_get_name(0))), " ") end,
+      env = function() return require("go_ide.project").env(require("go_ide.project").root(vim.api.nvim_buf_get_name(0))) end },
     { type = "go", name = "Go: debug package with arguments", request = "launch", mode = "debug",
       program = "${fileDirname}", cwd = "${fileDirname}", args = require("dap-go").get_arguments },
     { type = "go", name = "Go: debug package tests", request = "launch", mode = "test",

@@ -57,8 +57,10 @@ Press `Esc` before a Normal-mode shortcut. **`Space` is the leader key**: press 
 | Toggle symbol breadcrumbs | `Space u b` or `:GoIdeBreadcrumbs` |
 | Toggle sticky code context | `Space u c` or `:GoIdeContext` |
 | Toggle Focus Mode | `Space u f` or `:GoIdeFocus` |
-| Toggle sticky code context | `Space u c` or `:GoIdeContext` |
-| Toggle Focus Mode | `Space u f` or `:GoIdeFocus` |
+| Startup/runtime profile | `Space u p` or `:GoIdeProfile` |
+| Switch recent project | `Space p p` or `:GoWorkspaceSwitch` |
+| Save / restore project workspace | `Space p s` / `Space p r` |
+| New in-module Go scratch buffer | `Space n g` or `:GoScratch` |
 | Next / previous buffer | `Tab` / `Shift+Tab` in Normal mode |
 | Close current buffer | `Space b d` |
 | Move left / down / up / right between windows | `Ctrl+H` / `Ctrl+J` / `Ctrl+K` / `Ctrl+L` |
@@ -103,7 +105,11 @@ The file strip appears automatically when several files are open. Set `always_sh
 | Flash syntax-tree selection | `S` |
 | Jump to sticky context | `[c` |
 | Next / previous Go function or method | `]m` / `[m` |
-| Next / previous Go test | `]t` / `[t` |
+| Next / previous Go test or benchmark | `]t` / `[t` |
+| Next / previous Go type declaration | `]T` / `[T` |
+| Around / inside function text object | `af` / `if` (Visual or operator-pending) |
+| Around / inside method alias | `am` / `im` (so `dim` deletes a method body) |
+| Around / inside test/benchmark | `aT` / `iT` |
 | Return after a jump | `Ctrl+O` or `Space j b` |
 | Go forward again | `Space j f` |
 | Hover documentation / focus its card | `K` / `K` again |
@@ -112,6 +118,10 @@ The file strip appears automatically when several files are open. Set `always_sh
 | Signature help | `Ctrl+K` in Insert mode |
 | Rename symbol | `Space r n` or `F2` |
 | Code actions for cursor/selection | `Space c a` |
+| Refactor-only actions | `Space c r` |
+| Quick-fix / fix-all actions | `Space c x` |
+| Incoming / outgoing calls | `Space c I` / `Space c O` |
+| Browse module dependencies/updates | `Space c d` or `:GoModules` |
 | Format and organize imports | `Space c f`, `:GoFormat`, or `:GoImports` |
 | Tidy active module dependencies | `Space c m` or `:GoModTidy` |
 | Toggle format on save | `:GoFormatToggle` |
@@ -180,6 +190,11 @@ Edit `config/lua/custom/snippets.lua` in the repository or `~/.config/nvim-go/lu
 | Run current package tests | `Space t p` | `:GoTest package` |
 | Run current module tests | `Space t a` | `:GoTest all` |
 | Rerun exact previous test command | `Space t r` | `:GoTestLast` |
+| Race-test nearest test | `Space t R` | `:GoTestRace nearest` |
+| Benchmark nearest / package | `Space t b` / `Space t B` | `:GoBenchmark nearest/package` |
+| Save benchmark baseline | `Space t v` | `:GoBenchmarkBaseline nearest` |
+| Compare benchmark with baseline | `Space t V` | `:GoBenchmarkCompare nearest` |
+| Debug nearest test (test-group alias) | `Space t d` | `:GoDebugTest` |
 | Show/hide Go output | `Space t o` | `:GoOutput` |
 | Run module coverage | `Space t c` | `:GoCoverage` |
 | Clear coverage marks | `Space t C` | `:GoCoverageClear` |
@@ -221,7 +236,11 @@ The function keys need to reach the terminal; on some keyboards this means using
 | Stage current hunk | `Space g s` |
 | Reset hunk, with confirmation | `Space g u` |
 | Next / previous changed hunk | `Space g n` / `Space g p` |
+| Side-by-side diff current file vs branch base | `Space g d` or `:GoGitDiff` |
+| Review files changed on current branch | `Space g D` or `:GoGitReview` |
+| All repository hunks in styled quickfix | `Space g q` |
 | Profile health check | `Space u i` or `:GoIdeHealth` |
+| Startup/runtime profile | `Space u p` or `:GoIdeProfile` |
 | Edit settings | `Space u s` or `:GoIdeSettings` |
 | Open getting-started guide | `Space u h` or `:GoIdeGuide` |
 | Toggle relative line numbers | `Space u n` |

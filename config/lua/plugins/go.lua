@@ -96,7 +96,8 @@ return {
   },
   {
     "mfussenegger/nvim-dap",
-    lazy = false,
+    lazy = true,
+    cmd = { "GoDebugTest", "GoDebugLastTest" },
     dependencies = {
       "leoluz/nvim-dap-go",
       "rcarriga/nvim-dap-ui",

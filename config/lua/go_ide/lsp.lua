@@ -96,9 +96,21 @@ function M.toggle_codelens()
   vim.notify("Code lenses " .. (vim.g.go_ide_codelens and "on" or "off"))
 end
 
+local function project_gopls_settings()
+  local project = require("go_ide.project")
+  local root = project.root(vim.api.nvim_buf_get_name(0))
+  return {
+    buildFlags = project.build_flags(root),
+    env = project.env(root),
+  }
+end
+
 function M.restart()
   vim.lsp.enable("gopls", false)
-  vim.defer_fn(function() vim.lsp.enable("gopls", true) end, 200)
+  vim.defer_fn(function()
+    M.configure_gopls()
+    vim.lsp.enable("gopls", true)
+  end, 200)
   vim.notify("Restarting gopls…")
 end
 
@@ -155,7 +167,7 @@ function M.setup()
     on_dir(vim.fs.root(buf, "go.work") or vim.fs.root(buf, "go.mod")
       or vim.fs.root(buf, ".git") or vim.fs.dirname(filename))
   end
-  vim.lsp.config("gopls", {
+  M._gopls_base = {
     cmd = { M.tool("gopls") },
     capabilities = capabilities,
     filetypes = { "go", "gomod", "gowork", "gotmpl" },
@@ -182,7 +194,15 @@ function M.setup()
         },
       },
     },
-  })
+  }
+  function M.configure_gopls()
+    local cfg = vim.deepcopy(M._gopls_base)
+    local project = project_gopls_settings()
+    cfg.settings.gopls.buildFlags = project.buildFlags
+    cfg.settings.gopls.env = project.env
+    vim.lsp.config("gopls", cfg)
+  end
+  M.configure_gopls()
   vim.lsp.enable("gopls")
   local group = vim.api.nvim_create_augroup("GoIDE_LSP", { clear = true })
   vim.api.nvim_create_autocmd("BufWritePre", {
@@ -203,6 +223,17 @@ function M.setup()
       end
       if client:supports_method("textDocument/codeLens", event.buf) and setting("codelens", true) then
         vim.lsp.codelens.refresh({ bufnr = event.buf })
+      end
+      if client:supports_method("textDocument/documentHighlight", event.buf) then
+        local hl_group = vim.api.nvim_create_augroup("GoIDE_LSPHighlight_" .. event.buf, { clear = true })
+        vim.api.nvim_create_autocmd({ "CursorHold", "CursorHoldI" }, {
+          group = hl_group, buffer = event.buf,
+          callback = vim.lsp.buf.document_highlight,
+        })
+        vim.api.nvim_create_autocmd({ "CursorMoved", "InsertEnter", "BufLeave" }, {
+          group = hl_group, buffer = event.buf,
+          callback = vim.lsp.buf.clear_references,
+        })
       end
     end,
   })

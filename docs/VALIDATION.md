@@ -236,6 +236,35 @@ installed. It produced no visible error or message in these interaction
 checks. Fresh-start error state and doctor checks passed; this migration does
 not add vim-repeat or alter that upstream behavior.
 
+## Ultimate Go IDE v3: performance, workspaces and advanced Go workflows
+
+Validated on **23 October 2026** in GitHub Actions on Ubuntu 24.04 x86_64,
+using the repository's pinned Neovim 0.11.7 and a fresh isolated profile.
+
+| Check | Result |
+| --- | --- |
+| Fresh installer after optional-plugin lazy-loading changes | Passed |
+| Headless plugin restore and all 13 parser installations | Passed |
+| Portable `scripts/check.sh` / doctor | Passed |
+| Pinned benchstat build | Passed |
+| Bundled sample normal tests | Passed |
+| Bundled sample `go test -race ./...` | Passed |
+| Bundled `BenchmarkApp` execution with allocations | Passed |
+| New commands and tool checks | Passed by doctor |
+| Tree-sitter bootstrap under lazy loading | Passed after explicit bootstrap load |
+
+The first lazy-loading CI runs exposed a real installer regression:
+`TSInstallSync` was invoked before the lazy Tree-sitter plugin had registered
+its command. The bootstrap now explicitly loads `nvim-treesitter` after
+`Lazy restore` and before parser installation. The subsequent fresh-install
+run completed successfully.
+
+The v3 branch also adds project workspaces, project-local `.nvim-go.json`
+settings, Tree-sitter-native Go text objects, call hierarchy, Git branch review,
+module browsing, race-test commands, benchmark baseline/comparison through
+benchstat, startup profiling, large-file mode and optional-plugin lazy loading.
+The original Horizon per-pane statusline remains unchanged.
+
 ## ARM64 static check
 
 The official pinned `nvim-linux-arm64.tar.gz` was downloaded separately and its

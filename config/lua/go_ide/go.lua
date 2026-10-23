@@ -10,6 +10,17 @@ local test_results = {}
 local function notify(message, level) vim.notify(message, level or vim.log.levels.INFO, { title = "Go IDE" }) end
 local function tool(name) return require("go_ide.lsp").tool(name) end
 
+local function project_env(context)
+  return vim.tbl_extend("force", vim.fn.environ(), require("go_ide.project").env(context.root))
+end
+
+local function project_test_flags(context)
+  local args = {}
+  vim.list_extend(args, require("go_ide.project").build_flags(context.root))
+  vim.list_extend(args, require("go_ide.project").test_args(context.root))
+  return args
+end
+
 function M.context(buf)
   buf = (not buf or buf == 0) and vim.api.nvim_get_current_buf() or buf
   if vim.bo[buf].filetype ~= "go" and last_go_buf and vim.api.nvim_buf_is_valid(last_go_buf) then
@@ -157,6 +168,25 @@ local function diagnostic_from_line(line, context, package, cwd)
     file = vim.fs.normalize(base .. "/" .. file)
   end
   return { filename = file, lnum = tonumber(lnum), col = tonumber(col) or 1, text = message, type = "E" }
+end
+
+local function benchmark_functions(buf)
+  local ok, parser = pcall(vim.treesitter.get_parser, buf, "go")
+  if not ok then return {} end
+  local parsed = parser:parse()
+  if not parsed[1] then return {} end
+  local benches = {}
+  for node in parsed[1]:root():iter_children() do
+    if node:type() == "function_declaration" then
+      local name_node = node:field("name")[1]
+      local name = name_node and vim.treesitter.get_node_text(name_node, buf) or ""
+      if name == "Benchmark" or name:match("^Benchmark[^a-z]") then
+        local first, _, last = node:range()
+        benches[#benches + 1] = { name = name, first = first + 1, last = last + 1 }
+      end
+    end
+  end
+  return benches
 end
 
 local function test_functions(buf)
@@ -318,6 +348,7 @@ local function run_task(args, context, cwd, after)
   end
   local job = vim.fn.jobstart(args, {
     cwd = cwd,
+    env = project_env(context),
     on_stdout = function(_, data) stream("stdout", data) end,
     on_stderr = function(_, data) stream("stderr", data) end,
     on_exit = function(_, code)
@@ -349,29 +380,41 @@ local function run_task(args, context, cwd, after)
   return true
 end
 
-function M.test(scope)
-  scope = scope or "package"
-  if not vim.tbl_contains({ "nearest", "file", "package", "all" }, scope) then
-    notify("Use :GoTest nearest, file, package or all.", vim.log.levels.WARN); return
-  end
-  local context = M.context()
-  if not context or not M.save_go_buffers(context) then return end
+local function test_args(context, scope, race)
   local args = { tool("go"), "test", "-json", "-count=1" }
+  if race then args[#args + 1] = "-race" end
+  vim.list_extend(args, project_test_flags(context))
   if scope == "nearest" or scope == "file" then
     local pattern = M.test_pattern(scope, context.buf)
-    if not pattern then return end
+    if not pattern then return nil end
     vim.list_extend(args, { "-run", pattern })
   end
   args[#args + 1] = scope == "all" and "./..." or "."
+  return args
+end
+
+local function run_tests(scope, race)
+  scope = scope or "package"
+  if not vim.tbl_contains({ "nearest", "file", "package", "all" }, scope) then
+    notify("Use nearest, file, package or all.", vim.log.levels.WARN); return
+  end
+  local context = M.context()
+  if not context or not M.save_go_buffers(context) then return end
+  local args = test_args(context, scope, race)
+  if not args then return end
   local cwd = scope == "all" and context.root or context.directory
   M.state.last_test = {
     args = vim.deepcopy(args),
     context = vim.deepcopy(context),
     cwd = cwd,
     scope = scope,
+    race = race == true,
   }
   return run_task(args, context, cwd)
 end
+
+function M.test(scope) return run_tests(scope, false) end
+function M.test_race(scope) return run_tests(scope, true) end
 
 function M.rerun_last_test()
   local last = M.state.last_test
@@ -379,6 +422,96 @@ function M.rerun_last_test()
   if not M.save_go_buffers(last.context) then return false end
   return run_task(vim.deepcopy(last.args), vim.deepcopy(last.context), last.cwd)
 end
+
+local function benchmark_pattern(context, scope)
+  if scope ~= "nearest" then return "." end
+  if not context.file:match("_test%.go$") then
+    notify("Open a *_test.go file and place the cursor in a benchmark.", vim.log.levels.WARN)
+    return nil
+  end
+  local benches = benchmark_functions(context.buf)
+  if #benches == 0 then notify("No BenchmarkXxx functions in this file.", vim.log.levels.WARN); return nil end
+  local row = vim.api.nvim_win_get_cursor(0)[1]
+  local nearest = benches[1]
+  for _, bench in ipairs(benches) do
+    if bench.first <= row then nearest = bench else break end
+  end
+  return "^" .. nearest.name .. "$"
+end
+
+local function benchmark_file(context, pattern)
+  local dir = vim.fn.stdpath("cache") .. "/go-ide-benchmarks"
+  vim.fn.mkdir(dir, "p")
+  return dir .. "/" .. vim.fn.sha256(context.root .. ":" .. context.directory .. ":" .. pattern):sub(1, 20) .. ".txt"
+end
+
+local function run_benchmark(scope, mode)
+  scope = scope or "nearest"
+  if not vim.tbl_contains({ "nearest", "package", "all" }, scope) then
+    notify("Use nearest, package or all.", vim.log.levels.WARN); return
+  end
+  if M.state.running then notify("A Go task is already running.", vim.log.levels.WARN); return end
+  local context = M.context()
+  if not context or not M.save_go_buffers(context) then return end
+  local pattern = benchmark_pattern(context, scope)
+  if not pattern then return end
+  local args = { tool("go"), "test", "-run", "^$", "-bench", pattern, "-benchmem",
+    "-count=" .. tostring(require("go_ide.settings").benchmark_count or 5) }
+  vim.list_extend(args, project_test_flags(context))
+  args[#args + 1] = scope == "all" and "./..." or "."
+  local cwd = scope == "all" and context.root or context.directory
+  local buf = ensure_output()
+  vim.bo[buf].modifiable = true
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+    "$ " .. table.concat(args, " "),
+    "cwd: " .. cwd,
+    "",
+    "Running benchmark…",
+  })
+  vim.bo[buf].modifiable = false
+  M.open_output(false)
+  M.state.running = true
+  local system_job
+  system_job = vim.system(args, { cwd = cwd, text = true, env = project_env(context) }, function(result)
+    vim.schedule(function()
+      M.state.running = false
+      if M.state.system_job == system_job then M.state.system_job = nil end
+      local output = (result.stdout or "") .. (result.stderr or "")
+      append({ "" })
+      append(vim.split(vim.trim(output), "\n", { plain = true }))
+      if result.code ~= 0 then
+        notify("Benchmark failed.", vim.log.levels.ERROR)
+        return
+      end
+      local path = benchmark_file(context, pattern)
+      if mode == "baseline" then
+        vim.fn.writefile(vim.split(output, "\n", { plain = true }), path)
+        notify("Benchmark baseline saved.")
+      elseif mode == "compare" then
+        if vim.fn.filereadable(path) ~= 1 then
+          notify("No baseline yet. Run :GoBenchmarkBaseline first.", vim.log.levels.WARN)
+          return
+        end
+        local current = path .. ".current"
+        vim.fn.writefile(vim.split(output, "\n", { plain = true }), current)
+        local benchstat = tool("benchstat")
+        local comparison = vim.system({ benchstat, path, current }, { text = true }):wait(15000)
+        append({ "", "BENCHSTAT" })
+        append(vim.split(vim.trim((comparison.stdout or "") .. (comparison.stderr or "")), "\n", { plain = true }))
+        vim.fn.delete(current)
+        notify(comparison.code == 0 and "Benchmark comparison ready." or "benchstat reported an error.",
+          comparison.code == 0 and vim.log.levels.INFO or vim.log.levels.WARN)
+      else
+        notify("Benchmark complete.")
+      end
+    end)
+  end)
+  M.state.system_job = system_job
+end
+
+function M.benchmark(scope) return run_benchmark(scope, nil) end
+function M.benchmark_baseline(scope) return run_benchmark(scope, "baseline") end
+function M.benchmark_compare(scope) return run_benchmark(scope, "compare") end
 
 local function module_metadata_buffers(root)
   local buffers = {}
@@ -441,7 +574,9 @@ function M.run(args)
   local context = M.context()
   if not context or not M.save_go_buffers(context) then return end
   if vim.fn.executable(tool("go")) ~= 1 then notify("Go is missing; run the installer.", vim.log.levels.ERROR); return end
-  local command = { tool("go"), "run", "." }
+  local command = { tool("go"), "run" }
+  vim.list_extend(command, require("go_ide.project").build_flags(context.root))
+  command[#command + 1] = "."
   vim.list_extend(command, args or {})
   M.close_run()
   M.close_output()
@@ -457,7 +592,7 @@ function M.run(args)
   vim.wo.signcolumn = "no"
   vim.wo.winbar = "  TERMINAL   go run .  |  Ctrl-C: stop  ·  Ctrl-\\ Ctrl-N: normal mode"
   run_job = vim.fn.jobstart(command, {
-    cwd = context.directory, term = true,
+    cwd = context.directory, term = true, env = project_env(context),
     on_exit = function(_, code)
       run_job = nil
       M.state.run_job = nil
@@ -488,6 +623,12 @@ function M.stop()
     stopped = true
   end
   if run_job then vim.fn.jobstop(run_job); stopped = true end
+  if M.state.system_job then
+    pcall(M.state.system_job.kill, M.state.system_job, 15)
+    M.state.system_job = nil
+    M.state.running = false
+    stopped = true
+  end
   if not stopped then notify("No Go task is running.") end
 end
 
@@ -539,8 +680,10 @@ function M.coverage()
   local directory = vim.fn.stdpath("cache") .. "/go-ide-coverage"
   vim.fn.mkdir(directory, "p")
   local path = directory .. "/" .. vim.fn.sha256(context.root):sub(1, 16) .. ".out"
-  return run_task({ tool("go"), "test", "-json", "-count=1", "-coverprofile=" .. path, "./..." }, context, context.root,
-    function() read_coverage(path, context) end)
+  local args = { tool("go"), "test", "-json", "-count=1", "-coverprofile=" .. path }
+  vim.list_extend(args, project_test_flags(context))
+  args[#args + 1] = "./..."
+  return run_task(args, context, context.root, function() read_coverage(path, context) end)
 end
 
 function M.clear_coverage()
@@ -590,6 +733,14 @@ function M.setup()
   vim.api.nvim_create_user_command("GoTest", function(opts) M.test(opts.args == "" and "package" or opts.args) end,
     { nargs = "?", complete = function() return { "nearest", "file", "package", "all" } end, desc = "Run Go tests" })
   vim.api.nvim_create_user_command("GoTestLast", M.rerun_last_test, { desc = "Rerun the exact previous Go test command" })
+  vim.api.nvim_create_user_command("GoTestRace", function(opts) M.test_race(opts.args == "" and "package" or opts.args) end,
+    { nargs = "?", complete = function() return { "nearest", "file", "package", "all" } end, desc = "Run Go tests with the race detector" })
+  vim.api.nvim_create_user_command("GoBenchmark", function(opts) M.benchmark(opts.args == "" and "nearest" or opts.args) end,
+    { nargs = "?", complete = function() return { "nearest", "package", "all" } end, desc = "Run Go benchmarks" })
+  vim.api.nvim_create_user_command("GoBenchmarkBaseline", function(opts) M.benchmark_baseline(opts.args == "" and "nearest" or opts.args) end,
+    { nargs = "?", complete = function() return { "nearest", "package", "all" } end, desc = "Save benchmark baseline" })
+  vim.api.nvim_create_user_command("GoBenchmarkCompare", function(opts) M.benchmark_compare(opts.args == "" and "nearest" or opts.args) end,
+    { nargs = "?", complete = function() return { "nearest", "package", "all" } end, desc = "Compare benchmark with baseline" })
   vim.api.nvim_create_user_command("GoModTidy", M.mod_tidy, { desc = "Save module buffers and tidy dependencies asynchronously" })
   vim.api.nvim_create_user_command("GoCoverage", M.coverage, { desc = "Test the module with coverage signs" })
   vim.api.nvim_create_user_command("GoCoverageClear", M.clear_coverage, { desc = "Clear Go coverage signs" })

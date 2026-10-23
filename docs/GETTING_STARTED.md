@@ -98,6 +98,15 @@ A few features are intentionally automatic:
   duration. Editing package source clears those results so stale state is never
   presented as current.
 
+- Open files, editor splits, cursor positions, Explorer state and minimap/
+  breadcrumb choices are saved per project. **Space p p** switches recent
+  projects; **Space p s/r** saves/restores explicitly.
+- `daf` deletes an entire Go function/method, `vaf` selects one, and `dim`
+  deletes only its body. These text objects come directly from the Go syntax
+  tree rather than regex matching.
+- **Space u p** shows startup time, lazy-plugin load count, Lua memory and gopls
+  workspaces. Very large/generated files automatically enter a lighter mode.
+
 ## 2. The essential Neovim controls
 
 Start with three modes:
@@ -262,7 +271,7 @@ Your original search shortcuts are also available. Use `Space /` for a compact f
 
 The Neo-tree Explorer starts 40 columns wide. Its blue open-folder icon and bold italic path identify the current root, using `~` for your home directory. Dotfiles and ignored entries are filtered initially; a row such as **(2 hidden items)** reports the current count. Press `H` while Explorer is focused to show or hide filtered entries. Press `?` for its local help. `Enter` opens files or expands folders; `a` adds an item, `A` adds a directory, `r` renames, and `d` requests deletion with confirmation.
 
-Keep one project per Neovim instance while learning the setup. To change project, save your work, quit, `cd` into the next project, and launch `nvim-go` again. This avoids accidentally running shell commands in an earlier working directory.
+Projects now have lightweight persistent workspaces. `Space p p` switches among recent Go roots, saving the current workspace first and restoring the selected project's files, split layout, cursor positions and UI state. You can still keep one project per process if you prefer that stricter model.
 
 ### Problems and output
 
@@ -284,12 +293,15 @@ Run, test, and debug actions save modified named Go buffers in the active module
 | `:GoTest file` | Tests declared in this file, with the whole package compiled |
 | `:GoTest package` | Tests in the current package |
 | `:GoTest all` | `./...` in the current Go module |
+| `:GoTestRace nearest/package/all` | Run the selected scope with Go's race detector |
+| `:GoBenchmark nearest/package/all` | Run benchmarks with benchmem and repeated samples |
+| `:GoBenchmarkBaseline` / `:GoBenchmarkCompare` | Save and statistically compare a benchmark with benchstat |
 | `:GoCoverage` | Tests and coverage for the current Go module |
 | `:GoCoverageClear` | Remove coverage marks from the editor |
 | `:GoOutput` | Show the latest Go output |
 | `:GoStop` | Stop the running Go task |
 
-In a `go.work` workspace, `all` means the module containing the active file, not every module in the workspace. The test commands select top-level `Test`, `Example`, and `Fuzz` functions; they do not perform an indefinite fuzzing session or run benchmarks. For a specific subtest, benchmarks, race detection, build tags, or custom flags, use normal `go test` commands in the integrated terminal.
+In a `go.work` workspace, `all` means the module containing the active file, not every module in the workspace. The test commands select top-level `Test`, `Example`, and `Fuzz` functions; they do not perform an indefinite fuzzing session or run benchmarks. For a specific subtest you can still use a normal `go test` command in the integrated terminal. Benchmarks, race detection, build tags and stable custom test flags are integrated; project-specific settings live in `.nvim-go.json` as described in `docs/PROJECT_CONFIG.md`.
 
 ### Git
 
