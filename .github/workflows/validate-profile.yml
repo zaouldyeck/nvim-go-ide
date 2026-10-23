@@ -1,9 +1,13 @@
-name: Validate vNext
+name: Validate profile
 
 on:
-  push:
-    branches:
-      - feat/ultimate-go-ide-vnext
+  pull_request:
+    paths:
+      - "config/**"
+      - "scripts/**"
+      - "install.sh"
+      - ".github/workflows/validate-profile.yml"
+  workflow_dispatch:
 
 jobs:
   install-and-check:
