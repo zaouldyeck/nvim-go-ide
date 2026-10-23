@@ -21,7 +21,7 @@ function M.run()
   check('Native tabline', type(_G.GoIdeTabline) == 'function' and vim.o.tabline:find('GoIdeTabline', 1, true) ~= nil)
   local parser_ok, parser_error = pcall(vim.treesitter.language.add, 'go')
   check('Go parser', parser_ok, not parser_ok and tostring(parser_error) or nil)
-  for _, name in ipairs({ 'GoRun', 'GoTest', 'GoTestLast', 'GoTestRace', 'GoBenchmark', 'GoBenchmarkCompare', 'GoFormat', 'GoModTidy', 'GoModules', 'GoScratch', 'GoWorkspaceSwitch', 'GoGitReview', 'GoSnippetsReload', 'GoCoverage', 'GoDebugTest', 'GoTerminal', 'GoIdeHealth', 'GoIdeProfile', 'GoIdeFocus', 'GoIdeContext' }) do
+  for _, name in ipairs({ 'GoRun', 'GoGenerate', 'GoTest', 'GoTestLast', 'GoTestRace', 'GoBenchmark', 'GoBenchmarkCompare', 'GoFormat', 'GoModTidy', 'GoModules', 'GoScratch', 'GoWorkspaceSwitch', 'GoGitReview', 'GoSnippetsReload', 'GoCoverage', 'GoDebugTest', 'GoTerminal', 'GoIdeHealth', 'GoIdeProfile', 'GoIdeFocus', 'GoIdeContext', 'GoActions', 'GoAction', 'GoActionRepeat' }) do
     check('Command ' .. name, vim.fn.exists(':' .. name) == 2)
   end
   if #failed > 0 then error('Installation checks failed: ' .. table.concat(failed, ', ')) end

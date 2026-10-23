@@ -102,8 +102,24 @@ troubleshooting, see [docs/MACOS.md](docs/MACOS.md).
 | Go editing | gopls with visible progress, icon-rich completion, current-line diagnostics, custom LuaSnip templates, rounded hover/signature cards, rename/code actions, imports/formatting, module tidy, inlay hints and code lenses |
 | Execution | Run the current package interactively; nearest/file/package/module/race tests; exact rerun-last; persistent test state; benchmarks with benchstat baseline comparison; Quicker failures; coverage markers |
 | Debugging | Delve, breakpoints and conditional breakpoints, step/continue, locals, watches, call stacks, expression evaluation, nearest-test debugging, compatible Go launch.json entries |
-| Daily workflow | Persistent project workspaces, project-local build/test config, branch-diff review, module browser, Go scratch buffers, Git hunks/blame, integrated shell, persistent undo and discoverable Space-prefixed keys |
+| Daily workflow | Context-aware Action Hub + repeat-last action, persistent project workspaces, project-local build/test config, branch-diff review, generated-code actions, module browser, Go scratch buffers, Git hunks/blame and integrated shell |
 | Delivery | Installer, exact plugin lockfile, pinned native tool versions, sample CLI and tests, getting-started guide, shortcut reference, installation checker |
+
+## Action Hub
+
+Press **Space a** anywhere to open a context-aware action picker. It understands
+whether the cursor is inside a test, benchmark, ordinary function, generated Go
+file, diagnostic, Git repository or gopls-backed symbol and ranks the useful
+actions first. Existing shortcuts continue to work, but the core test,
+benchmark, refactor, Git, project and run shortcuts now execute through the same
+registry.
+
+Press **Space .** to repeat the last repeatable IDE action. Registered actions
+also have stable IDs for automation, for example `:GoAction test.nearest` and
+`:GoAction git.review`.
+
+Generated Go files get dedicated actions for rerunning `go generate` in the
+package and locating the owning `//go:generate` directives.
 
 ## IDE experience
 

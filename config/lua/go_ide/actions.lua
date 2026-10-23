@@ -200,6 +200,26 @@ local function register_defaults()
     run = function() return require('go_ide.go').coverage() end,
   })
   M.register({
+    id = 'go.generate', group = 'Go', label = 'Run go generate for package', priority = 32,
+    available = function(c) return c.go end,
+    score = function(c) return c.generated and 120 or 0 end,
+    detail = function(c) return c.generated and 'generated file' or nil end,
+    run = function() return require('go_ide.go').generate('package') end,
+  })
+  M.register({
+    id = 'go.generate.find', group = 'Go', label = 'Find go:generate directives', priority = 30,
+    available = function(c) return c.go end,
+    score = function(c) return c.generated and 115 or 0 end,
+    run = function(c)
+      telescope()
+      require('telescope.builtin').live_grep({
+        cwd = c.root,
+        default_text = '//go:generate',
+        prompt_title = 'go:generate directives',
+      })
+    end,
+  })
+  M.register({
     id = 'go.tidy', group = 'Go', label = 'Tidy module dependencies', key = 'Space c m', priority = 28,
     available = function(c) return c.go or c.filename == 'go.mod' or c.filename == 'go.sum' end,
     run = function() return require('go_ide.go').mod_tidy() end,
