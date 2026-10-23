@@ -471,9 +471,11 @@ local function run_benchmark(scope, mode)
   vim.bo[buf].modifiable = false
   M.open_output(false)
   M.state.running = true
-  vim.system(args, { cwd = cwd, text = true, env = project_env(context) }, function(result)
+  local system_job
+  system_job = vim.system(args, { cwd = cwd, text = true, env = project_env(context) }, function(result)
     vim.schedule(function()
       M.state.running = false
+      if M.state.system_job == system_job then M.state.system_job = nil end
       local output = (result.stdout or "") .. (result.stderr or "")
       append({ "" })
       append(vim.split(vim.trim(output), "\n", { plain = true }))
@@ -504,6 +506,7 @@ local function run_benchmark(scope, mode)
       end
     end)
   end)
+  M.state.system_job = system_job
 end
 
 function M.benchmark(scope) return run_benchmark(scope, nil) end
@@ -620,6 +623,12 @@ function M.stop()
     stopped = true
   end
   if run_job then vim.fn.jobstop(run_job); stopped = true end
+  if M.state.system_job then
+    pcall(M.state.system_job.kill, M.state.system_job, 15)
+    M.state.system_job = nil
+    M.state.running = false
+    stopped = true
+  end
   if not stopped then notify("No Go task is running.") end
 end
 
