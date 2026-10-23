@@ -3,6 +3,7 @@ M.parsers = { 'go', 'gomod', 'gosum', 'gowork', 'lua', 'vim', 'vimdoc', 'query',
 function M.run()
   if vim.v.errmsg ~= '' then error('Neovim startup failed: ' .. vim.v.errmsg) end
   require('lazy').restore({ wait = true, show = false })
+  require('lazy').load({ plugins = { 'nvim-treesitter' }, wait = true })
   local plugins = require('lazy.core.config').plugins
   for name, plugin in pairs(plugins) do
     if not plugin._.installed then error('Plugin installation failed: ' .. name) end
