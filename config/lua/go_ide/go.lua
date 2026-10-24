@@ -524,6 +524,21 @@ local function module_metadata_buffers(root)
   return buffers
 end
 
+function M.generate(scope)
+  scope = scope or "package"
+  if not vim.tbl_contains({ "package", "all" }, scope) then
+    notify("Use :GoGenerate package or all.", vim.log.levels.WARN)
+    return false
+  end
+  local context = M.context()
+  if not context or not M.save_go_buffers(context) then return false end
+  local args = { tool("go"), "generate" }
+  vim.list_extend(args, require("go_ide.project").build_flags(context.root))
+  args[#args + 1] = scope == "all" and "./..." or "."
+  local cwd = scope == "all" and context.root or context.directory
+  return run_task(args, context, cwd)
+end
+
 function M.mod_tidy()
   if M.state.running then notify("A Go task is already running. Use :GoStop first.", vim.log.levels.WARN); return false end
   local buf = vim.api.nvim_get_current_buf()
@@ -741,6 +756,8 @@ function M.setup()
     { nargs = "?", complete = function() return { "nearest", "package", "all" } end, desc = "Save benchmark baseline" })
   vim.api.nvim_create_user_command("GoBenchmarkCompare", function(opts) M.benchmark_compare(opts.args == "" and "nearest" or opts.args) end,
     { nargs = "?", complete = function() return { "nearest", "package", "all" } end, desc = "Compare benchmark with baseline" })
+  vim.api.nvim_create_user_command("GoGenerate", function(opts) M.generate(opts.args == "" and "package" or opts.args) end,
+    { nargs = "?", complete = function() return { "package", "all" } end, desc = "Run go generate for the current package/module" })
   vim.api.nvim_create_user_command("GoModTidy", M.mod_tidy, { desc = "Save module buffers and tidy dependencies asynchronously" })
   vim.api.nvim_create_user_command("GoCoverage", M.coverage, { desc = "Test the module with coverage signs" })
   vim.api.nvim_create_user_command("GoCoverageClear", M.clear_coverage, { desc = "Clear Go coverage signs" })
