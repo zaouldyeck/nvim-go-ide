@@ -1,8 +1,8 @@
 # Neovim Go IDE
 
-A complete, isolated Neovim profile for daily Go development. It combines the
-navy palette, italic syntax, relative numbers, and status line of your current
-Neovim screenshot with the Go IDE workflow built for this package. Start it
+A complete, isolated Neovim profile for daily Go development. Its UI is driven
+by the tracked go-night palette, native tab/breadcrumb layout, responsive
+Neo-tree/minimap settings, and the pinned lualine Horizon statusline. Start it
 with `nvim-go`.
 
 ## Preview
@@ -15,11 +15,13 @@ with `nvim-go`.
   <img src="docs/assets/nvim-go-showcase.gif" alt="Animated tour of the Neovim Go IDE using real editor captures." width="620">
 </p>
 
-The full-resolution screenshot above is the visual reference. The smaller
-animation is a quick tour built from the repository's original PNG captures,
-with a separate palette per frame and dithering disabled to keep terminal text
-crisp. Font rasterization and terminal chrome can still differ slightly between
-Linux and macOS.
+The full-resolution hero above is generated from the tracked Neovim
+configuration and the repository's sample Go program. It follows the configured
+34-column Explorer, tab/breadcrumb chrome, 10-column minimap, go-night palette,
+and the exact pinned lualine Horizon colors. Terminal/tmux chrome and transient
+floating windows are intentionally excluded. The smaller animation remains a
+quick tour built from the repository's original captures. Font rasterization can
+still differ slightly between terminals and operating systems.
 
 ## Install on Fedora Asahi Remix
 
@@ -298,6 +300,23 @@ the distinction between settings, executable tools, and plugin data.
 | `scripts/versions.env` | Tool versions and official release checksums |
 | `scripts/check.sh` | Installation checks; no plugin installation in check mode |
 | `scripts/build-guide-pdf.py` | Rebuild the printable guide from the tracked Markdown and screenshots |
+| `scripts/build-readme-preview.py` | Rebuild the config-derived README hero from settings and sample Go code |
+
+### Rebuild the README preview
+
+The README hero is generated rather than manually edited. It reads
+`config/lua/go_ide/settings.lua` for Explorer/minimap dimensions and the
+go-night palette, renders the tracked `sample-project/main.go`, and uses the
+Horizon palette pinned by the repository's lualine commit.
+
+```bash
+python3 -m pip install pillow pygments
+python3 scripts/build-readme-preview.py
+```
+
+The generator intentionally stops at Neovim's own UI boundary: shell prompts,
+tmux bars, terminal window decorations, and transient floating windows are not
+part of the hero.
 
 ### Rebuild the printable guide
 
