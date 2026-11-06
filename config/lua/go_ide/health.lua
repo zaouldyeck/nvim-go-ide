@@ -8,7 +8,7 @@ function M.check()
   health.info("Profile: " .. (vim.env.NVIM_APPNAME or "nvim"))
   health.info("Config: " .. vim.fn.stdpath("config"))
   health.info("Tools: " .. vim.fn.stdpath("data") .. "/bin")
-  for _, name in ipairs({ "go", "gopls", "goimports", "dlv", "benchstat", "git", "rg" }) do
+  for _, name in ipairs({ "go", "gopls", "goimports", "dlv", "benchstat", "gomodifytags", "git", "rg" }) do
     local command = require("go_ide.lsp").tool(name)
     if vim.fn.executable(command) == 1 then
       health.ok(name .. ": " .. vim.fn.exepath(command))
