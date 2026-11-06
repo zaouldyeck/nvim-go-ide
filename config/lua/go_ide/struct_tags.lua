@@ -26,35 +26,23 @@ local function cursor_offset(buf)
   return offset
 end
 
-local function apply_source(buf, before, after)
-  if before == after then return false end
-  local replacement = vim.split(after, '\n', { plain = true })
-  if replacement[#replacement] == '' then table.remove(replacement) end
-  local hunks = vim.diff(before, after, { result_type = 'indices' })
+local function apply_patch(buf, patch)
+  if type(patch) ~= 'table' or type(patch.start) ~= 'number'
+    or type(patch['end']) ~= 'number' or type(patch.lines) ~= 'table' then
+    notify('Struct tags: gomodifytags returned an invalid editor patch.', vim.log.levels.ERROR)
+    return false
+  end
   local views = {}
   for _, win in ipairs(vim.fn.win_findbuf(buf)) do
     views[win] = vim.api.nvim_win_call(win, vim.fn.winsaveview)
   end
-  local changed = false
-  for index = #hunks, 1, -1 do
-    local hunk = hunks[index]
-    local first = hunk[2] == 0 and hunk[1] or hunk[1] - 1
-    local lines = {}
-    for line = hunk[3], hunk[3] + hunk[4] - 1 do
-      lines[#lines + 1] = replacement[line]
-    end
-    if changed then
-      vim.api.nvim_buf_call(buf, function() pcall(vim.cmd, 'undojoin') end)
-    end
-    vim.api.nvim_buf_set_lines(buf, first, first + hunk[2], false, lines)
-    changed = true
-  end
+  vim.api.nvim_buf_set_lines(buf, patch.start - 1, patch['end'], false, patch.lines)
   for win, view in pairs(views) do
     if vim.api.nvim_win_is_valid(win) then
       vim.api.nvim_win_call(win, function() vim.fn.winrestview(view) end)
     end
   end
-  return changed
+  return true
 end
 
 function M.add(tag, omitempty)
@@ -62,6 +50,7 @@ function M.add(tag, omitempty)
     notify('Supported automatic struct tags are json and yaml.', vim.log.levels.ERROR)
     return false
   end
+
   local buf = vim.api.nvim_get_current_buf()
   if vim.bo[buf].filetype ~= 'go' then
     notify('Struct tags are available in Go buffers.', vim.log.levels.WARN)
@@ -72,27 +61,32 @@ function M.add(tag, omitempty)
     notify('Save or name this Go buffer before adding struct tags.', vim.log.levels.WARN)
     return false
   end
+
   local executable = require('go_ide.lsp').tool('gomodifytags')
   if vim.fn.executable(executable) ~= 1 then
     notify('gomodifytags is missing. Re-run install.sh to install the pinned Go tools.', vim.log.levels.ERROR)
     return false
   end
 
-  local before = source_for(buf)
-  local offset = cursor_offset(buf)
+  local source = source_for(buf)
   local args = {
     executable,
     '-file', filename,
-    '-offset', tostring(offset),
+    '-offset', tostring(cursor_offset(buf)),
     '-add-tags', tag,
     '-transform', 'snakecase',
+    '-format', 'json',
     '-modified',
   }
   if omitempty then
     vim.list_extend(args, { '-add-options', tag .. '=omitempty' })
   end
 
-  local archive = filename .. '\n' .. tostring(#before) .. '\n' .. before
+  -- gomodifytags' -modified mode reads an overlay archive from stdin, so
+  -- unsaved Neovim edits are the source of truth. -format json returns only
+  -- the affected line range, which keeps undo history and unrelated formatting
+  -- untouched.
+  local archive = filename .. '\n' .. tostring(#source) .. '\n' .. source
   local ok, result = pcall(function()
     return vim.system(args, {
       stdin = archive,
@@ -107,15 +101,16 @@ function M.add(tag, omitempty)
     return false
   end
 
-  local after = result.stdout or ''
-  if after == '' then
-    notify('Struct tags: gomodifytags returned no source.', vim.log.levels.WARN)
+  local decoded_ok, patch = pcall(vim.json.decode, result.stdout or '')
+  if not decoded_ok then
+    notify('Struct tags: could not decode gomodifytags editor output.', vim.log.levels.ERROR)
     return false
   end
-  if not apply_source(buf, before, after) then
-    notify(tag .. ' tags are already up to date.')
-    return true
+  if patch.errors and #patch.errors > 0 then
+    notify('Struct tags: ' .. table.concat(patch.errors, '; '), vim.log.levels.WARN)
   end
+  if not apply_patch(buf, patch) then return false end
+
   notify(string.format('Added %s tags%s to the struct.', tag, omitempty and ' with omitempty' or ''))
   return true
 end
@@ -127,7 +122,7 @@ function M.protobuf()
   if generated then
     message = 'This is generated protobuf Go code. Wire tags are owned by protoc; edit the .proto schema and regenerate instead.'
   else
-    message = 'Protobuf wire tags require schema field numbers and wire types, so they cannot be safely inferred from a Go struct. Define the message in .proto and regenerate with protoc/buf. For extra Go tags on generated messages, use @gotags with a protobuf tag-injection step.'
+    message = 'Protobuf wire tags require schema field numbers and wire types, so they cannot be safely inferred from a Go struct. Define the message in .proto and regenerate with protoc or Buf. For extra custom Go tags on generated messages, use @gotags with a protobuf tag-injection step.'
   end
   notify(message, vim.log.levels.WARN)
   return false
