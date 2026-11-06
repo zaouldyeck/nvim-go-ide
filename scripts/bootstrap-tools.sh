@@ -102,13 +102,14 @@ binary_has_version() {
   go version -m "$1" 2>/dev/null | awk -v module="$2" -v version="$3" \
     '$1 == "mod" && $2 == module && $3 == version {found=1} END {exit !found}'
 }
-tool_stamp="gopls=$GOPLS_VERSION goimports=$GOIMPORTS_VERSION delve=$DELVE_VERSION benchstat=$BENCHSTAT_VERSION"
+tool_stamp="gopls=$GOPLS_VERSION goimports=$GOIMPORTS_VERSION delve=$DELVE_VERSION benchstat=$BENCHSTAT_VERSION gomodifytags=$GOMODIFYTAGS_VERSION"
 reuse_tools=0
 if [[ -f "$DATA_DIR/bin/.versions" && "$(cat "$DATA_DIR/bin/.versions")" == "$tool_stamp" ]]; then
-  if [[ -x "$DATA_DIR/bin/gopls" && -x "$DATA_DIR/bin/goimports" && -x "$DATA_DIR/bin/dlv" && -x "$DATA_DIR/bin/benchstat" ]] \
+  if [[ -x "$DATA_DIR/bin/gopls" && -x "$DATA_DIR/bin/goimports" && -x "$DATA_DIR/bin/dlv" && -x "$DATA_DIR/bin/benchstat" && -x "$DATA_DIR/bin/gomodifytags" ]] \
     && binary_has_version "$DATA_DIR/bin/gopls" golang.org/x/tools/gopls "$GOPLS_VERSION" \
     && binary_has_version "$DATA_DIR/bin/goimports" golang.org/x/tools "$GOIMPORTS_VERSION" \
-    && binary_has_version "$DATA_DIR/bin/dlv" github.com/go-delve/delve "$DELVE_VERSION"; then reuse_tools=1; fi
+    && binary_has_version "$DATA_DIR/bin/dlv" github.com/go-delve/delve "$DELVE_VERSION" \
+    && binary_has_version "$DATA_DIR/bin/gomodifytags" github.com/fatih/gomodifytags "$GOMODIFYTAGS_VERSION"; then reuse_tools=1; fi
 fi
 if ((!reuse_tools)); then
   printf '\nBuilding pinned Go tools (first install can take several minutes)…\n'
@@ -120,7 +121,8 @@ if ((!reuse_tools)); then
   GOBIN="$stage/bin" GOTOOLCHAIN=local GOOS="$go_os" GOARCH="$go_arch" go install "golang.org/x/tools/cmd/goimports@$GOIMPORTS_VERSION"
   GOBIN="$stage/bin" GOTOOLCHAIN=local GOOS="$go_os" GOARCH="$go_arch" go install "github.com/go-delve/delve/cmd/dlv@$DELVE_VERSION"
   GOBIN="$stage/bin" GOTOOLCHAIN=local GOOS="$go_os" GOARCH="$go_arch" go install "golang.org/x/perf/cmd/benchstat@$BENCHSTAT_VERSION"
-  for binary in gopls goimports dlv benchstat; do mv -f -- "$stage/bin/$binary" "$DATA_DIR/bin/$binary"; done
+  GOBIN="$stage/bin" GOTOOLCHAIN=local GOOS="$go_os" GOARCH="$go_arch" go install "github.com/fatih/gomodifytags@$GOMODIFYTAGS_VERSION"
+  for binary in gopls goimports dlv benchstat gomodifytags; do mv -f -- "$stage/bin/$binary" "$DATA_DIR/bin/$binary"; done
   printf '%s\n' "$tool_stamp" > "$DATA_DIR/bin/.versions"
 fi
 printf '\nExecutable dependencies are ready.\n'
@@ -129,3 +131,4 @@ go version
 "$DATA_DIR/bin/gopls" version
 "$DATA_DIR/bin/dlv" version
 "$DATA_DIR/bin/benchstat" -h >/dev/null 2>&1 || true
+"$DATA_DIR/bin/gomodifytags" -h >/dev/null 2>&1 || true
