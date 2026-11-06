@@ -251,6 +251,36 @@ local function register_defaults()
     run = function() require('go_ide.modules').show() end,
   })
   M.register({
+    id = 'code.tags.pick', group = 'Tags', label = 'Struct tag picker', key = 'Space c t', priority = 50,
+    available = function(c) return c.go end, repeatable = false,
+    run = function() require('go_ide.struct_tags').pick() end,
+  })
+  M.register({
+    id = 'code.tags.json', group = 'Tags', label = 'Add JSON struct tags', key = 'Space c j', priority = 49,
+    available = function(c) return c.go end,
+    run = function() return require('go_ide.struct_tags').add('json', false) end,
+  })
+  M.register({
+    id = 'code.tags.json_omitempty', group = 'Tags', label = 'Add JSON tags + omitempty', key = 'Space c J', priority = 48,
+    available = function(c) return c.go end,
+    run = function() return require('go_ide.struct_tags').add('json', true) end,
+  })
+  M.register({
+    id = 'code.tags.yaml', group = 'Tags', label = 'Add YAML struct tags', key = 'Space c y', priority = 47,
+    available = function(c) return c.go end,
+    run = function() return require('go_ide.struct_tags').add('yaml', false) end,
+  })
+  M.register({
+    id = 'code.tags.yaml_omitempty', group = 'Tags', label = 'Add YAML tags + omitempty', key = 'Space c Y', priority = 46,
+    available = function(c) return c.go end,
+    run = function() return require('go_ide.struct_tags').add('yaml', true) end,
+  })
+  M.register({
+    id = 'code.tags.protobuf', group = 'Tags', label = 'Protobuf tags (schema-safe guidance)', key = 'Space c p', priority = 40,
+    available = function(c) return c.go end, repeatable = false,
+    run = function() return require('go_ide.struct_tags').protobuf() end,
+  })
+  M.register({
     id = 'code.definition', group = 'Code', label = 'Go to definition', key = 'g d', priority = 66,
     available = function(c) return c.lsp end,
     run = function() vim.lsp.buf.definition() end,
