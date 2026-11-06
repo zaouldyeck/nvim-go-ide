@@ -26,6 +26,27 @@ jobs:
         shell: bash
         run: |
           "$HOME/.local/bin/nvim-go" --headless main_test.go             '+lua vim.api.nvim_win_set_cursor(0, { 48, 0 }); local c=require("go_ide.context").current(); assert(c.benchmark_name=="BenchmarkApp", vim.inspect(c)); local a=require("go_ide.actions").list(c); assert(a[1].id:match("^benchmark"), vim.inspect(a[1])); assert(vim.fn.exists(":GoActions")==2); assert(vim.fn.exists(":GoAction")==2); assert(vim.fn.exists(":GoActionRepeat")==2)'             +qa
+      - name: Verify struct tag actions
+        shell: bash
+        run: |
+          cat > /tmp/nvim-go-struct-tags.go <<'EOF'
+          package main
+
+          type Pod struct {
+          	Name      string
+          	Namespace string
+          	Ready     bool
+          }
+          EOF
+          "$HOME/.local/bin/nvim-go" --headless /tmp/nvim-go-struct-tags.go \
+            '+lua vim.api.nvim_win_set_cursor(0, {4, 2}); local t=require("go_ide.struct_tags"); assert(t.add("json", false)); assert(t.add("yaml", false)); assert(t.add("json", true)); vim.cmd("write")' \
+            +qa
+          grep -Eq 'Name[[:space:]]+string.*json:"name,omitempty".*yaml:"name"' /tmp/nvim-go-struct-tags.go
+          grep -Eq 'Namespace[[:space:]]+string.*json:"namespace,omitempty".*yaml:"namespace"' /tmp/nvim-go-struct-tags.go
+          grep -Eq 'Ready[[:space:]]+bool.*json:"ready,omitempty".*yaml:"ready"' /tmp/nvim-go-struct-tags.go
+          "$HOME/.local/bin/nvim-go" --headless /tmp/nvim-go-struct-tags.go \
+            '+lua assert(require("go_ide.struct_tags").protobuf() == false)' +qa
+
       - name: Verify sample Go workflows
         working-directory: sample-project
         shell: bash
