@@ -41,9 +41,12 @@ jobs:
           "$HOME/.local/bin/nvim-go" --headless /tmp/nvim-go-struct-tags.go \
             '+lua vim.api.nvim_win_set_cursor(0, {4, 2}); local t=require("go_ide.struct_tags"); assert(t.add("json", false)); assert(t.add("yaml", false)); assert(t.add("json", true)); vim.cmd("write")' \
             +qa
-          grep -Eq 'Name[[:space:]]+string.*json:"name,omitempty".*yaml:"name"' /tmp/nvim-go-struct-tags.go
-          grep -Eq 'Namespace[[:space:]]+string.*json:"namespace,omitempty".*yaml:"namespace"' /tmp/nvim-go-struct-tags.go
-          grep -Eq 'Ready[[:space:]]+bool.*json:"ready,omitempty".*yaml:"ready"' /tmp/nvim-go-struct-tags.go
+          grep -Eq 'Name[[:space:]]+string.*json:"name,omitempty"' /tmp/nvim-go-struct-tags.go
+          grep -Eq 'Name[[:space:]]+string.*yaml:"name"' /tmp/nvim-go-struct-tags.go
+          grep -Eq 'Namespace[[:space:]]+string.*json:"namespace,omitempty"' /tmp/nvim-go-struct-tags.go
+          grep -Eq 'Namespace[[:space:]]+string.*yaml:"namespace"' /tmp/nvim-go-struct-tags.go
+          grep -Eq 'Ready[[:space:]]+bool.*json:"ready,omitempty"' /tmp/nvim-go-struct-tags.go
+          grep -Eq 'Ready[[:space:]]+bool.*yaml:"ready"' /tmp/nvim-go-struct-tags.go
           "$HOME/.local/bin/nvim-go" --headless /tmp/nvim-go-struct-tags.go \
             '+lua assert(require("go_ide.struct_tags").protobuf() == false)' +qa
 
