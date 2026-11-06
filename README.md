@@ -101,7 +101,7 @@ troubleshooting, see [docs/MACOS.md](docs/MACOS.md).
 | --- | --- |
 | Appearance | Screenshot-sampled navy palette, italic purple keywords, cyan Go gophers, native rounded-card tabs, breadcrumbs, sticky code context, responsive Explorer/minimap, polished completion and floats, and the original Horizon per-pane status bars |
 | Navigation | Neo-tree Explorer, Flash label jumps, sticky Tree-sitter context, fuzzy search, outline, implementation/reference/call-hierarchy tools, Tree-sitter-native Go motions/text objects, recent-project switching, responsive layout and Focus Mode |
-| Go editing | gopls with visible progress, icon-rich completion, current-line diagnostics, custom LuaSnip templates, rounded hover/signature cards, rename/code actions, imports/formatting, module tidy, inlay hints and code lenses |
+| Go editing | gopls with visible progress, icon-rich completion, current-line diagnostics, custom LuaSnip templates, rounded hover/signature cards, JSON/YAML struct-tag actions, rename/code actions, imports/formatting, module tidy, inlay hints and code lenses |
 | Execution | Run the current package interactively; nearest/file/package/module/race tests; exact rerun-last; persistent test state; benchmarks with benchstat baseline comparison; Quicker failures; coverage markers |
 | Debugging | Delve, breakpoints and conditional breakpoints, step/continue, locals, watches, call stacks, expression evaluation, nearest-test debugging, compatible Go launch.json entries |
 | Daily workflow | Context-aware Action Hub + repeat-last action, persistent project workspaces, project-local build/test config, branch-diff review, generated-code actions, module browser, Go scratch buffers, Git hunks/blame and integrated shell |
@@ -249,7 +249,7 @@ launcher at `~/.local/bin/nvim-go`. Neovim's `NVIM_APPNAME` keeps its configurat
 plugins, state and cache separate from ordinary `nvim`.
 
 The installer pins Neovim **0.11.7**, gopls **v0.24.0**, goimports from x/tools
-**v0.52.0**, Delve **v1.27.2**, and benchstat to an exact x/perf commit. If a suitable Go 1.27 toolchain is not already
+**v0.52.0**, Delve **v1.27.2**, gomodifytags **v1.17.0**, and benchstat to an exact x/perf commit. If a suitable Go 1.27 toolchain is not already
 available, it installs a private **Go 1.27.3** for this profile. `--install-go`
 forces that private toolchain. These versions are recorded in
 `scripts/versions.env`; the exact plugin commits are in `config/lazy-lock.json`.
@@ -295,6 +295,7 @@ the distinction between settings, executable tools, and plugin data.
 | `config/lua/custom/snippets.lua` | Personal Go templates and return-type choices; reload with `:GoSnippetsReload` |
 | `config/lua/go_ide/lsp.lua` | gopls, formatting, imports and analysis |
 | `config/lua/go_ide/go.lua` | Run, tests, module tidy, quickfix and coverage |
+| `config/lua/go_ide/struct_tags.lua` | JSON/YAML struct-tag editing and protobuf-safe guidance |
 | `config/lua/go_ide/debug.lua` | Delve launch configurations and debugger panels |
 | `config/lua/go_ide/terminal.lua` | Persistent project shell |
 | `scripts/versions.env` | Tool versions and official release checksums |
@@ -350,6 +351,7 @@ their original licenses continue to apply. It does not bundle their binaries.
 - [Neovim 0.11.7](https://github.com/neovim/neovim/releases/tag/v0.11.7)
 - [Neovim standard paths and NVIM_APPNAME](https://neovim.io/doc/user/starting/#standard-path)
 - [gopls features](https://go.dev/gopls/features/)
+- [gomodifytags](https://github.com/fatih/gomodifytags)
 - [nvim-dap-go](https://github.com/leoluz/nvim-dap-go)
 - [lazy.nvim lockfiles](https://lazy.folke.io/usage/lockfile)
 - [nvim-treesitter compatibility branch](https://github.com/nvim-treesitter/nvim-treesitter/tree/master)
