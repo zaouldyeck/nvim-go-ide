@@ -221,6 +221,43 @@ Place the cursor on `NewCliConfig` and press `F2` or `Space r n`. Enter a new na
 
 Code actions are context-sensitive. On an appropriate expression or selection they can offer operations such as implementing an interface, filling a struct literal, extracting a function, or adding/removing struct tags. Press `Space c a` to see what is available at that location in a Telescope dropdown. Type to filter, select an action with the arrow keys or `Ctrl+J`/`Ctrl+K`, then press `Enter`; `Esc` cancels. [Gopls transformations](https://go.dev/gopls/features/transformation)
 
+### Add struct tags quickly
+
+Put the cursor anywhere inside a Go struct and use the dedicated tag actions:
+
+| Action | Shortcut / command |
+| --- | --- |
+| Open struct-tag picker | `Space c t` or `:GoStructTags` |
+| Add JSON tags | `Space c j` or `:GoStructTags json` |
+| Add JSON tags + `omitempty` | `Space c J` or `:GoStructTags json-omitempty` |
+| Add YAML tags | `Space c y` or `:GoStructTags yaml` |
+| Add YAML tags + `omitempty` | `Space c Y` or `:GoStructTags yaml-omitempty` |
+| Protobuf tag guidance | `Space c p` or `:GoStructTags protobuf` |
+
+For example:
+
+```go
+type Pod struct {
+	Name      string
+	Namespace string
+	Ready     bool
+}
+```
+
+Pressing **Space c j** produces:
+
+```go
+type Pod struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+	Ready     bool   `json:"ready"`
+}
+```
+
+**Space c Y** uses the same snake_case field-name transformation for YAML and adds `omitempty`. The helper feeds the unsaved Neovim buffer to `gomodifytags`, modifies only the struct under the cursor, and leaves the result as an ordinary buffer edit that you can inspect or undo before saving.
+
+Protobuf is different. Generated Go protobuf tags encode field numbers and wire types, so the IDE deliberately refuses to invent them from a plain Go struct. Define protobuf fields in the `.proto` schema and regenerate with `protoc` or Buf. If you need extra custom Go tags on generated protobuf messages, use an `@gotags` injection step in the protobuf generation workflow instead of editing generated `.pb.go` files manually.
+
 ### Run the CLI
 
 With `main.go` active:
