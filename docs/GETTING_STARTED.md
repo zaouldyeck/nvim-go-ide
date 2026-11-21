@@ -159,6 +159,8 @@ Press `K` again to focus the card. Use `j` / `k` or `Ctrl+D` / `Ctrl+U` to scrol
 ![Native Go documentation in the rounded, blue-bordered hover card.](nvim-go-hover.png)
 
 ### Try completion and automatic imports
+Unused imports are cleaned up automatically shortly after you leave Insert mode, without requiring a save. The same gopls import-organization step runs synchronously before every Go save as a safety net. Use **Space c o** or `:GoOrganizeImports` to run it immediately.
+
 
 Inside a function, begin typing a standard-library symbol such as `strings.ToUpper`. Select a completion, accept it, and finish a valid expression. Saving runs `goimports`, which formats Go code and adds or removes imports when it can resolve them. Use `:GoImports` or `:GoFormat` to request the same formatting explicitly.
 
