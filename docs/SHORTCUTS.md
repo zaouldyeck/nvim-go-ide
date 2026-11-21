@@ -123,6 +123,7 @@ The file strip appears automatically when several files are open. Set `always_sh
 | Incoming / outgoing calls | `Space c I` / `Space c O` |
 | Browse module dependencies/updates | `Space c d` or `:GoModules` |
 | Format and organize imports | `Space c f`, `:GoFormat`, or `:GoImports` |
+| Organize imports only | `Space c o` or `:GoOrganizeImports` |
 | Tidy active module dependencies | `Space c m` or `:GoModTidy` |
 | Struct tag picker | `Space c t` or `:GoStructTags` |
 | Add JSON tags / JSON + `omitempty` | `Space c j` / `Space c J` |
