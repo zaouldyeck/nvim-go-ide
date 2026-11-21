@@ -24,6 +24,8 @@ return {
   large_file_bytes = 2 * 1024 * 1024,
   large_file_lines = 20000,
   format_on_save = true,
+  organize_imports_on_idle = true, -- remove/add imports shortly after leaving Insert mode
+  organize_imports_delay_ms = 350, -- debounce live import cleanup while editing
   inlay_hints = false,          -- keep the source uncluttered; toggle with Space c i
   codelens = true,
   relative_numbers = true,      -- relative distances, with an amber current line number
