@@ -1,6 +1,8 @@
 -- Native Neovim 0.11 LSP configuration. No Mason or legacy lspconfig API.
 local M = {}
 local formatting = {}
+local organize_generation = {}
+local organizing = {}
 
 function M.tool(name)
   local private = vim.fn.stdpath("data") .. "/bin/" .. name
@@ -77,6 +79,95 @@ function M.format(buf)
     end
   end
   return true
+end
+
+local function organize_params(buf, client)
+  local win = vim.fn.bufwinid(buf)
+  if win == -1 then return nil end
+  return vim.api.nvim_win_call(win, function()
+    local params = vim.lsp.util.make_range_params(win, client.offset_encoding)
+    params.context = {
+      diagnostics = {},
+      only = { "source.organizeImports" },
+      triggerKind = vim.lsp.protocol.CodeActionTriggerKind.Automatic,
+    }
+    return params
+  end)
+end
+
+local function apply_code_action(action, client, ctx)
+  if action.edit then
+    vim.lsp.util.apply_workspace_edit(action.edit, client.offset_encoding)
+  end
+  if action.command then
+    local command = type(action.command) == "table" and action.command or action
+    client:exec_cmd(command, ctx)
+  end
+end
+
+-- Ask gopls for its source.organizeImports action. In synchronous mode this is
+-- safe to use from BufWritePre; async mode is used for no-save idle cleanup.
+function M.organize_imports(buf, opts)
+  opts = opts or {}
+  buf = (not buf or buf == 0) and vim.api.nvim_get_current_buf() or buf
+  if not vim.api.nvim_buf_is_valid(buf) or vim.bo[buf].filetype ~= "go" then return false end
+  if organizing[buf] then return false end
+
+  local client = vim.lsp.get_clients({ bufnr = buf, name = "gopls" })[1]
+  if not client or not client:supports_method("textDocument/codeAction", buf) then return false end
+  local params = organize_params(buf, client)
+  if not params then return false end
+
+  local changedtick = vim.api.nvim_buf_get_changedtick(buf)
+  local timeout_ms = opts.timeout_ms or 3000
+  organizing[buf] = true
+
+  if opts.sync then
+    local response, err = client:request_sync("textDocument/codeAction", params, timeout_ms, buf)
+    organizing[buf] = nil
+    if err or not response then return false end
+    local applied = false
+    for _, action in ipairs(response.result or {}) do
+      if not action.kind or vim.startswith(action.kind, "source.organizeImports") then
+        apply_code_action(action, client, {
+          bufnr = buf,
+          client_id = client.id,
+          method = "textDocument/codeAction",
+          params = params,
+        })
+        applied = true
+      end
+    end
+    return applied
+  end
+
+  local ok = client:request("textDocument/codeAction", params, function(err, result, ctx)
+    organizing[buf] = nil
+    if err or not vim.api.nvim_buf_is_valid(buf) then return end
+    -- Never apply an edit computed for stale text if the user resumed typing.
+    if vim.api.nvim_buf_get_changedtick(buf) ~= changedtick then return end
+    for _, action in ipairs(result or {}) do
+      if not action.kind or vim.startswith(action.kind, "source.organizeImports") then
+        apply_code_action(action, client, ctx)
+      end
+    end
+  end, buf)
+  if not ok then organizing[buf] = nil end
+  return ok
+end
+
+local function schedule_organize_imports(buf)
+  if not setting("organize_imports_on_idle", true) then return end
+  if not vim.api.nvim_buf_is_valid(buf) or vim.bo[buf].filetype ~= "go" then return end
+  organize_generation[buf] = (organize_generation[buf] or 0) + 1
+  local generation = organize_generation[buf]
+  local delay = setting("organize_imports_delay_ms", 350)
+  vim.defer_fn(function()
+    if organize_generation[buf] ~= generation or not vim.api.nvim_buf_is_valid(buf) then return end
+    local mode = vim.api.nvim_get_mode().mode
+    if mode:sub(1, 1) == "i" then return end
+    M.organize_imports(buf, { sync = false })
+  end, delay)
 end
 
 function M.toggle_inlay_hints()
@@ -209,8 +300,18 @@ function M.setup()
     group = group, pattern = "*.go",
     callback = function(event)
       if setting("format_on_save", true) and vim.b[event.buf].go_ide_format_on_save ~= false then
+        -- gopls owns import organization; goimports then formats the resulting
+        -- buffer. The synchronous request guarantees the import edit lands
+        -- before the write completes.
+        M.organize_imports(event.buf, { sync = true, timeout_ms = 3000 })
         M.format(event.buf)
       end
+    end,
+  })
+  vim.api.nvim_create_autocmd({ "InsertLeave", "CursorHold" }, {
+    group = group, pattern = "*.go",
+    callback = function(event)
+      schedule_organize_imports(event.buf)
     end,
   })
   vim.api.nvim_create_autocmd("LspAttach", {
@@ -247,6 +348,9 @@ function M.setup()
       end
     end,
   })
+  vim.api.nvim_create_user_command("GoOrganizeImports", function()
+    M.organize_imports(0, { sync = true, timeout_ms = 3000 })
+  end, { desc = "Organize Go imports with gopls" })
   vim.api.nvim_create_user_command("GoFormat", function() M.format() end, { desc = "Format Go and organize imports" })
   vim.api.nvim_create_user_command("GoImports", function() M.format() end, { desc = "Organize Go imports and format" })
   vim.api.nvim_create_user_command("GoFormatToggle", function()
