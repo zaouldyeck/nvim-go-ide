@@ -306,6 +306,11 @@ local function register_defaults()
     run = code_action(),
   })
   M.register({
+    id = 'code.imports', group = 'Code', label = 'Organize imports', key = 'Space c o', priority = 57,
+    available = function(c) return c.go and c.lsp end,
+    run = function() return require('go_ide.lsp').organize_imports(0, { sync = true, timeout_ms = 3000 }) end,
+  })
+  M.register({
     id = 'code.refactor', group = 'Code', label = 'Refactor actions', key = 'Space c r', priority = 61,
     available = function(c) return c.lsp end,
     run = code_action({ 'refactor' }),
